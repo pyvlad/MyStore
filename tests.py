@@ -381,7 +381,7 @@ class ReformatTest(unittest.TestCase):
 
         expected = sorted(self.data)
         with new_db.reader("r") as reader:
-            retrieved = sorted([(k, CJP.unpack_value(reader[k])) for k,v in self.data])
+            retrieved = sorted([(int(k), CJP.unpack_value(v)) for k,v in reader.get_all()])
 
         self.assertListEqual(retrieved, expected)
 

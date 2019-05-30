@@ -16,7 +16,7 @@ from .cursors import Reader, Writer
 
 
 DBMDB_FILENAME = ".dbmdb.json"
-CONFIG_FILENAME = ".mystore.json"
+CONFIG_FILENAME = "config"
 _REGISTRY = {
     cls.__name__: cls
     for cls in [
@@ -126,7 +126,7 @@ class DB:
 
 
     def reformat(self, new_db):
-        for filepath in self.basefile_cls.all_filepaths(self.root):
+        for filepath in self.router.all_filepaths():
             with self.basefile_cls(filepath, mode="r") as f:
                 contents = f.items()
                 for k,v in contents:

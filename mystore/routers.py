@@ -9,6 +9,8 @@ import logging
 lg = logging.getLogger(__name__)
 
 import os
+import dbm
+import dbm.gnu
 
 
 class BaseRouter:
@@ -30,6 +32,9 @@ class BaseRouter:
         """
         Returns path to a child DB.
         """
+        raise NotImplemented
+
+    def all_filepaths(self):
         raise NotImplemented
 
 
@@ -98,6 +103,21 @@ class OriginalRouter(BaseRouter):
 
         return filepath
 
+    def all_filepaths(self):
+        for dirpath, dirnames, filenames in os.walk(self.root_directory):
+            for fn in filenames:
+                filepath = os.path.join(dirpath, fn)
+                if dbm.whichdb(filepath) == "dbm.gnu":
+                    yield filepath
+
 
 class JsonRouter(OriginalRouter):
     EXTENSION = "json"
+
+    def all_filepaths(self):
+        for dirpath, dirnames, filenames in os.walk(self.root_directory):
+            for fn in filenames:
+                filepath = os.path.join(dirpath, fn)
+                _, file_extension = os.path.splitext(filepath)
+                if file_extension[1:] == self.__class__.EXTENSION:
+                    yield filepath

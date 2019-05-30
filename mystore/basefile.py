@@ -52,10 +52,6 @@ class BaseFile:
     def items(self):
         raise NotImplemented
 
-    @staticmethod
-    def all_filepaths(root):
-        raise NotImplemented
-
     def _create_directory(self):
         try:
             os.makedirs(self.dirname)
@@ -81,14 +77,6 @@ class DbmFile(BaseFile):
 
     def items(self):
         return {k: self[k] for k in self.keys()}.items()
-
-    @staticmethod
-    def all_filepaths(root):
-        for dirpath, dirnames, filenames in os.walk(root):
-            for fn in filenames:
-                filepath = os.path.join(dirpath, fn)
-                if dbm.whichdb(filepath) == "dbm.gnu":
-                    yield filepath
 
     # ******* implementation details *******
     def _open(self):
@@ -182,8 +170,3 @@ class JsonFile(BaseFile):
 
     def items(self):
         return self._handle.items()
-
-    @staticmethod
-    def all_filepaths(root):
-        raise NotImplemented
-        # TODO: this method belongs to the BaseRouter not BaseFile

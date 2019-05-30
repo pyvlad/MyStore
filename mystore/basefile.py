@@ -7,10 +7,11 @@ lg = logging.getLogger(__name__)
 import os
 import dbm.gnu
 import dbm
+import json
 import time
 
 
-class DbmFile:
+class BaseFile:
     def __init__(self, path, mode, *, wait_time=0.1):
         """
         Create instance and open file at 'path' in specified mode.
@@ -33,6 +34,38 @@ class DbmFile:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __getitem__(self, k):
+        raise NotImplemented
+
+    def __setitem__(self, k, v):
+        raise NotImplemented
+
+    def close(self):
+        raise NotImplemented
+
+    def _open(self):
+        raise NotImplemented
+
+    def keys(self):
+        raise NotImplemented
+
+    def items(self):
+        raise NotImplemented
+
+    @staticmethod
+    def all_filepaths(root):
+        raise NotImplemented
+
+    def _create_directory(self):
+        try:
+            os.makedirs(self.dirname)
+            lg.debug("Created directory [%s]", self.dirname)
+        except FileExistsError:     # created by another thread/process
+            lg.debug("Directory already exists [%s]", self.dirname)
+
+
+
+class DbmFile(BaseFile):
     def __getitem__(self, k):
         return self._handle[str(k)]
 
@@ -113,9 +146,44 @@ class DbmFile:
                 break
         return handle
 
-    def _create_directory(self):
-        try:
-            os.makedirs(self.dirname)
-            lg.debug("Created directory [%s]", self.dirname)
-        except FileExistsError:     # created by another thread/process
-            lg.debug("Directory already exists [%s]", self.dirname)
+
+
+class JsonFile(BaseFile):
+    def __getitem__(self, k):
+        return self._handle[str(k)]
+
+    def __setitem__(self, k, v):
+        self._handle[str(k)] = v
+
+    def close(self):
+        if self.mode == "w":
+            content = json.dumps(self._handle)
+            with open(self.path, "w") as f:
+                f.write(content)
+
+    def _open(self):
+        lg.debug("opening new file handle")
+        if self.mode == "w":
+            if not os.path.exists(self.dirname):
+                self._create_directory()
+        if self.mode in ["w", "r"]:
+            if os.path.exists(self.path):
+                with open(self.path, "r") as f:
+                    content = f.read()
+                    content = json.loads(content)
+                    return content
+            else:
+                return {}
+        else:
+            raise OSError("Mode %s is not supported by JsonFile")
+
+    def keys(self):
+        return list(self._handle.keys())
+
+    def items(self):
+        return self._handle.items()
+
+    @staticmethod
+    def all_filepaths(root):
+        raise NotImplemented
+        # TODO: this method belongs to the BaseRouter not BaseFile

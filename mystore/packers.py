@@ -9,6 +9,7 @@ lg = logging.getLogger(__name__)
 import os
 import gzip
 import json
+import base64
 
 
 class BaseValuePacker:
@@ -33,3 +34,16 @@ class CompressedJsonPacker:
             lg.warning("UnicodeDecodeError while decoding value for key=%s", k)
             v = json.loads(gzip.decompress(v_raw).decode(errors="replace"))
         return v
+
+
+class BytesBase64Packer:
+    """
+    Convert binary values to/from base64 encoded text strings.
+    """
+    @staticmethod
+    def pack_value(v):
+        return base64.encodebytes(v).decode('ascii')
+
+    @staticmethod
+    def unpack_value(v_raw):
+        return base64.decodebytes(v_raw.encode('ascii'))

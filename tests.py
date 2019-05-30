@@ -11,10 +11,10 @@ import shutil
 import random
 
 from mystore import DB
-from mystore import DbmFile
-from mystore import OriginalRouter
+from mystore import DbmFile, JsonFile
+from mystore import OriginalRouter, JsonRouter
 from mystore import MyStoreError
-from mystore import CompressedJsonPacker as CJP
+from mystore import CompressedJsonPacker as CJP, BytesBase64Packer
 
 
 def get_db_path():
@@ -349,6 +349,41 @@ def save_in_process(root_directory, data_to_save):
     with db.writer() as writer:
         for k, v in data_to_save:
             writer[k] = v
+
+
+class ReformatTest(unittest.TestCase):
+    def setUp(self):
+        self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,50)]
+        self.root1 = get_db_path()
+        self.root2 = get_db_path() + "2"
+        self.root3 = get_db_path() + "3"
+        self.params = {
+            "dbm_size": 7,
+            "subfolder_size": 1,
+            "first_key": 0
+        }
+        self.router = OriginalRouter(self.root1, params=self.params)
+        self.db = DB(self.router).create()
+        with self.db.writer() as writer:
+            for k, v in self.data:
+                writer[k] = v
+
+    def tearDown(self):
+        shutil.rmtree(self.root1, ignore_errors=True)
+        shutil.rmtree(self.root2, ignore_errors=True)
+        shutil.rmtree(self.root3, ignore_errors=True)
+        self.db = None
+
+    def test_reformat_as_json(self):
+        router = JsonRouter(self.root2, params=self.params)
+        new_db = DB(router, basefile_cls=JsonFile, packer_cls=BytesBase64Packer).create()
+        self.db.reformat(new_db=new_db)
+
+        expected = sorted(self.data)
+        with new_db.reader("r") as reader:
+            retrieved = sorted([(k, CJP.unpack_value(reader[k])) for k,v in self.data])
+
+        self.assertListEqual(retrieved, expected)
 
 
 if __name__ == '__main__':

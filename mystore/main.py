@@ -9,16 +9,24 @@ import os
 import sys
 import json
 
-from .basefile import DbmFile
-from .routers import OriginalRouter
-from .packers import CompressedJsonPacker
+from .basefile import DbmFile, JsonFile
+from .routers import OriginalRouter, JsonRouter
+from .packers import CompressedJsonPacker, BytesBase64Packer
 from .cursors import Reader, Writer
 
 
 DBMDB_FILENAME = ".dbmdb.json"
-CONFIG_FILENAME = "mystore.json"
-
-_REGISTRY = {cls.__name__: cls for cls in [OriginalRouter, DbmFile, CompressedJsonPacker]}
+CONFIG_FILENAME = ".mystore.json"
+_REGISTRY = {
+    cls.__name__: cls
+    for cls in [
+        OriginalRouter,
+        DbmFile,
+        CompressedJsonPacker,
+        JsonFile,
+        JsonRouter,
+        BytesBase64Packer
+]}
 
 
 class MyStoreError(OSError):
@@ -115,6 +123,15 @@ class DB:
             }
 
         raise MyStoreError("No Config File Found")
+
+
+    def reformat(self, new_db):
+        for filepath in self.basefile_cls.all_filepaths(self.root):
+            with self.basefile_cls(filepath, mode="r") as f:
+                contents = f.items()
+                for k,v in contents:
+                    with new_db.writer("w") as writer:
+                        writer[int(k)] = v
 
 
 # TODO: JSONfile + reformat methods

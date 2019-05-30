@@ -50,6 +50,8 @@ class OriginalRouter(BaseRouter):
         first_key: int
             Integer key to start from (default: 1)
     """
+    EXTENSION = "dbm"
+
     def __init__(self, root_directory, params):
         super().__init__(root_directory, params)
         self.dbm_size = params["dbm_size"]
@@ -88,9 +90,14 @@ class OriginalRouter(BaseRouter):
         filepath = os.path.join(
             os.path.abspath(self.root_directory),
             subfolder_name,
-            "%s.dbm" % filename)
+            "%s.%s" % (filename, self.EXTENSION)
+        )
 
         # 4. make it pretty
         filepath = os.path.normpath(filepath)
 
         return filepath
+
+
+class JsonRouter(OriginalRouter):
+    EXTENSION = "json"

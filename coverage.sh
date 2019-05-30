@@ -2,4 +2,4 @@
 
 coverage run --concurrency=multiprocessing tests.py
 coverage combine
-coverage report -m --include=./dbmdb/*
+coverage report -m --include=./mystore/*

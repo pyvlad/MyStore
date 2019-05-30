@@ -6,99 +6,30 @@ import unittest
 import os
 import sys
 import tempfile
-import gzip
-import json
 import time
 import shutil
 import random
 
-from dbmdb import JsonDbmFile
-from dbmdb import Router
-from dbmdb import Dbmdb
-from dbmdb import Writer
-from dbmdb import Reader
-from dbmdb.main import METADATA_FILENAME
-import dbmdb
+from mystore import DB
+from mystore import DbmFile
+from mystore import OriginalRouter
+from mystore import MyStoreError
+from mystore import CompressedJsonPacker as CJP
 
 
-def get_dbmdb_path():
+def get_db_path():
     return os.path.join(
         tempfile.gettempdir(),
-        "dbmdb_%s_%s" % (time.time(), random.randint(0, 10000))
+        "mystore_%s_%s" % (time.time(), random.randint(0, 10000))
     )
 
 
-class DbmFileTest(unittest.TestCase):
-    """
-    Test JsonDbmFile wrapper class
-    """
-    @classmethod
-    def setUpClass(cls):
-        filepath = os.path.join(tempfile.gettempdir(), "temp_dbm.dbm")
-        testdata = {
-            "0": {"name": "zero"},
-            "1": {"name": "one"},
-            "10": {"name": "ten"},
-            "99": {"name": "ninety nine"},
-            "100": None,
-        }
-        with JsonDbmFile(filepath) as f:
-            for k, v in testdata.items():
-                f[str(k)] = v
-        cls._filepath = filepath
-        cls._testdata = testdata
-
-    @classmethod
-    def tearDownClass(cls):
-        for ext in ["", ".dir", ".dat", ".pag", ".bak"]:
-            filepath = cls._filepath + ext
-            if os.path.exists(filepath):
-                os.remove(filepath)
-
-    # setup and teardown for each test
-    def setUp(self):
-        self.dbmfile = JsonDbmFile(self._filepath, mode="r")
-
-    def tearDown(self):
-        self.dbmfile.close()
-
-    # tests for methods
-    def test_str(self):
-        name = str(self.dbmfile)
-        self.assertEqual(name, self._filepath)
-
-    def test_get(self):
-        keys = ["1", "100"]
-        testdata_values = [self._testdata[key] for key in keys]
-        values = [self.dbmfile.get(key) for key in keys]
-        self.assertEqual(values, testdata_values)
-
-    def test_get_raw(self):
-        keys = ["1", "100"]
-        testdata_values = [
-            gzip.compress(json.dumps(self._testdata[key]).encode())[8:]
-            # bytes 4-8 are for timestamp:
-            # http://www.onicos.com/staff/iz/formats/gzip.html
-            for key in keys]
-        values = [self.dbmfile.get(key, raw=True)[8:] for key in keys]
-        self.assertEqual(values, testdata_values)
-
-    def test_keys(self):
-        keys = self.dbmfile.keys()
-        self.assertEqual(sorted([k.decode() for k in keys]), sorted(self._testdata.keys()))
-
-    def test_get_all_items(self):
-        all_values = {k.decode(): self.dbmfile.get(k) for k in self.dbmfile.keys()}
-        self.assertDictEqual(all_values, self._testdata)
-
-
-
-class RouterTest(unittest.TestCase):
+class OriginalRouterTest(unittest.TestCase):
     """
     Tests for all things create/initialize DB
     """
     def setUp(self):
-        self.root_directory = get_dbmdb_path()
+        self.root_directory = get_db_path()
         os.makedirs(self.root_directory)
 
         sep = os.path.sep
@@ -145,48 +76,122 @@ class RouterTest(unittest.TestCase):
         (a) configuration attributes and
         (b) key value
         """
-        routers = [Router(self.root_directory, row[0], row[1], first_key=0) for row in self.data]
+        params = lambda row: {
+            "dbm_size": row[0],
+            "subfolder_size": row[1],
+            "first_key": 0
+        }
+        routers = [OriginalRouter(self.root_directory, params(row)) for row in self.data]
         expected_values = [os.path.join(self.root_directory, row[3]) for row in self.data]
-        returned_values = [router.get_path_to_dbm(row[2]) for router, row in zip(routers, self.data)]
+        returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
 
     def test_path_retrieval_fk1(self):
         """
         Test an older version which assumed that keys start from 1
         """
-        routers = [Router(self.root_directory, row[0], row[1], first_key=1) for row in self.data]
+        params = lambda row: {
+            "dbm_size": row[0],
+            "subfolder_size": row[1],
+            "first_key": 1
+        }
+        routers = [OriginalRouter(self.root_directory, params(row)) for row in self.data]
         expected_values = [os.path.join(self.root_directory, row[4]) for row in self.data]
-        returned_values = [router.get_path_to_dbm(row[2]) for router, row in zip(routers, self.data)]
+        returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
 
 
+class DbmFileTest(unittest.TestCase):
+    """
+    Test JSONDbmFile wrapper class.
+    """
+    @classmethod
+    def setUpClass(cls):
+        filepath = os.path.join(tempfile.gettempdir(), "temp_dbm.dbm")
+        testdata = {
+            0: {"name": "zero"},
+            1: {"name": "one"},
+            10: {"name": "ten"},
+            99: {"name": "ninety nine"},
+            100: None,
+        }
+        with DbmFile(filepath, "w") as f:
+            for k, v in testdata.items():
+                f[k] = CJP.pack_value(v)
+        cls._filepath = filepath
+        cls._testdata = testdata
 
-class DbmdbTest(unittest.TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls._filepath):
+            os.remove(cls._filepath)
 
+    # setup and teardown for each test
+    def setUp(self):
+        self.dbmfile = DbmFile(self._filepath, mode="r")
+
+    def tearDown(self):
+        self.dbmfile.close()
+
+    # tests for methods
+    def test_str(self):
+        name = str(self.dbmfile)
+        self.assertEqual(name, self._filepath)
+
+    def test_get(self):
+        keys = [1, 100]
+        testdata_values = [self._testdata[key] for key in keys]
+        values = [CJP.unpack_value(self.dbmfile[key]) for key in keys]
+        self.assertEqual(values, testdata_values)
+
+    def test_get_raw(self):
+        keys = [1, 100]
+        testdata_values = [CJP.pack_value(self._testdata[key])[8:] for key in keys]
+        # bytes 4-8 are for timestamp:
+        # http://www.onicos.com/staff/iz/formats/gzip.html
+        values = [self.dbmfile[key][8:] for key in keys]
+        self.assertEqual(values, testdata_values)
+
+    def test_keys(self):
+        self.assertEqual(
+            sorted([int(k) for k in self.dbmfile.keys()]),
+            sorted(self._testdata.keys())
+        )
+
+    def test_get_all_items(self):
+        all_values = {int(k): CJP.unpack_value(v) for k, v in self.dbmfile.items()}
+        self.assertDictEqual(all_values, self._testdata)
+
+
+class DBTestsSetup:
     def setUp(self):
         self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
-        self.root_directory = get_dbmdb_path()
-        self.dbm_size = 3
-        self.subfolder_size = 1
-        self.router = Router(self.root_directory, dbm_size=10, subfolder_size=0)
-        self.db = Dbmdb(self.router)
+        self.root_directory = get_db_path()
+        self.params = {
+            "dbm_size": 3,
+            "subfolder_size": 1,
+            "first_key": 0
+        }
+        self.router = OriginalRouter(self.root_directory, params=self.params)
+        self.db = DB(self.router)
         self.db.create()
 
-        writer = self.db.get_writer()
-        for k, v in self.data:
-            writer.save_value(k, v)
-        writer.close()
+        with self.db.writer() as writer:
+            for k, v in self.data:
+                writer[k] = v
 
     def tearDown(self):
         shutil.rmtree(self.root_directory, ignore_errors=True)
         self.db = None
 
-    def test_create(self):
+
+class DBCreateTest(DBTestsSetup, unittest.TestCase):
+    def test_load_existing(self):
         """
-        Test from_folder method.
+        Test 'load' method.
         """
         # initialize an existing DB from serialized configs
-        db = Dbmdb.from_folder(self.root_directory)
+        db = DB.load(self.root_directory)
 
         # assert that it has same configuration attributes
         keys_to_compare = ["root_directory", "dbm_size", "subfolder_size", "first_key"]
@@ -195,82 +200,33 @@ class DbmdbTest(unittest.TestCase):
 
         self.assertListEqual(params[0], params[1])
 
-    def test_get(self):
-        retrieved_data = []
-        for k, v in self.data:
-            retrieved_data += [(k, self.db.get(k))]
-        self.assertListEqual(retrieved_data, self.data)
-
-    def test_get_many(self):
-        keys = [k for k, v in self.data]
-        retrieved_data = self.db.get_many(keys=keys)    # dict
-        retrieved = sorted(retrieved_data.items())
-        expected = sorted(self.data)
-        self.assertListEqual(retrieved, expected)
-
-    def test_get_many_in_threads(self):
-        keys = [k for k, v in self.data]
-        retrieved_data = self.db.get_many(keys=keys, num_threads=2)    # dict
-        retrieved = sorted(retrieved_data.items())
-        expected = sorted(self.data)
-        self.assertListEqual(retrieved, expected)
-
-    def test_all_filepaths(self):
-        expected_dbms = [self.db.router.get_path_to_dbm(k) for k, v in self.data]
-        expected_dbms = set(expected_dbms)
-        retrieved_dbms = set(self.db._all_filepaths())
-        self.assertSetEqual(retrieved_dbms, expected_dbms)
-
-    def test_get_all(self):
-        retrieved_values = sorted([(k, v) for k,v in self.db.get_all()])
-        expected_values = sorted(self.data)
-        self.assertListEqual(retrieved_values, expected_values)
-
-    def test_create_dbmdb_nonempty_dir(self):
+    def test_create_db_nonempty_dir(self):
         """
         Try creating another db in existing non-empty directory.
         """
-        with self.assertRaises(dbmdb.DbmdbError):
-            db = dbmdb.create_db(self.root_directory, 10, 0, first_key=0)
+        with self.assertRaises(MyStoreError):
+            db = DB(self.router)
+            db.create()
 
 
-
-
-class ReaderWriterTest(unittest.TestCase):
-
-    def setUp(self):
-        self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)})
-                     for i in range(0,10)]
-        self.root_directory = get_dbmdb_path()
-        self.dbm_size = 3
-        self.subfolder_size = 1
-        self.router = Router(self.root_directory, self.dbm_size, self.subfolder_size)
-
-        # fill database with some data
-        writer = Writer(self.router)
-        for int_key, json_value in self.data:
-            writer.save_value(key=int_key, value=json_value)
-        writer.close()
-
-    def tearDown(self):
-        shutil.rmtree(self.root_directory, ignore_errors=True)
-        self.router = None
-
+class ReaderTest(DBTestsSetup, unittest.TestCase):
     def test_get_value(self):
-        reader = Reader()
-        retrieved_data = [(k, reader.get_value(k, self.router.get_path_to_dbm(k))) for k,v in self.data]
+        """ """
+        with self.db.reader() as reader:
+            retrieved_data = [(k, reader[k]) for k, v in self.data]
         self.assertListEqual(retrieved_data, self.data)
 
     def test_get_value_concurrent(self):
+        """ """
         retrieved_data = []
+
         def save_in_thread(root_directory, keys_to_read, lock):
             nonlocal retrieved_data
-            reader = Reader(threadlock=lock)
-            for k in keys_to_read:
-                v = reader.get_value(k, self.router.get_path_to_dbm(k))
-                with lock:
-                    retrieved_data += [(k, v)]
-            reader.close()
+            with self.db.reader(threadlock=lock) as reader:
+                for k in keys_to_read:
+                    v = reader[k]
+                    with lock:
+                        retrieved_data += [(k, v)]
 
         import threading
         threads_number = 5
@@ -297,89 +253,53 @@ class ReaderWriterTest(unittest.TestCase):
 
         self.assertListEqual(retrieved, expected)
 
+    def test_get_many(self):
+        """ """
+        keys = [k for k, v in self.data]
+        with self.db.reader() as reader:
+            retrieved_data = reader.get_many(keys=keys)
+            retrieved = sorted(retrieved_data.items())
+        expected = sorted(self.data)
+        self.assertListEqual(retrieved, expected)
 
-class DbmdbJsonTest(unittest.TestCase):
-
-    def setUp(self):
-        self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)})
-                     for i in range(0,10)]
-        self.root_directory = get_dbmdb_path()
-        self.dbm_size = 3
-        self.subfolder_size = 1
-        self.router = Router(self.root_directory, self.dbm_size, self.subfolder_size)
-        self.db = Dbmdb(self.router)
-        self.db.create()
-
-        self.root_directory2 = get_dbmdb_path() + "2"
-        self.root_directory3 = get_dbmdb_path() + "3"
-
-        writer = self.db.get_writer()
-        for k, v in self.data:
-            writer.save_value(k, v)
-        writer.close()
-
-    def tearDown(self):
-        shutil.rmtree(self.root_directory, ignore_errors=True)
-        shutil.rmtree(self.root_directory2, ignore_errors=True)
-        shutil.rmtree(self.root_directory3, ignore_errors=True)
-        self.db = None
-
-    def test_reformat_as_json(self):
-        self.db.reformat_as_json(new_root=self.root_directory2)
-        expected_dbms = [os.path.relpath(self.db.router.get_path_to_dbm(k), self.root_directory)
-                         for k, v in self.data]
-        expected_dbms = set(expected_dbms)
-        new_filepaths = set()
-        for dirpath, dirnames, filenames in os.walk(self.root_directory2):
-            for fn in filenames:
-                if fn != METADATA_FILENAME:
-                    new_filepaths.add(
-                        os.path.relpath(os.path.join(dirpath, fn), self.root_directory2))
-        self.assertSetEqual(expected_dbms, new_filepaths)
-
-    def test_reformat_from_json(self):
-        self.db.reformat_as_json(new_root=self.root_directory2)
-        json_db = Dbmdb.from_folder(self.root_directory2)
-        json_db.reformat_from_json(new_root=self.root_directory3)
-        new_db = Dbmdb.from_folder(self.root_directory3)
-        old_values = sorted([(k, v) for k,v in self.db.get_all()])
-        new_values = sorted([(k, v) for k,v in new_db.get_all()])
-        self.assertListEqual(old_values, new_values)
-
-    def test_reformat_from_json_raw(self):
-        self.db.reformat_as_json(new_root=self.root_directory2, raw=True)
-        json_db = Dbmdb.from_folder(self.root_directory2)
-        json_db.reformat_from_json(new_root=self.root_directory3, raw=True)
-        new_db = Dbmdb.from_folder(self.root_directory3)
-        old_values = sorted([(k, v) for k,v in self.db.get_all()])
-        new_values = sorted([(k, v) for k,v in new_db.get_all()])
-        self.assertListEqual(old_values, new_values)
+    def test_get_all(self):
+        """ """
+        with self.db.reader() as reader:
+            retrieved = sorted((int(k), v) for k,v in reader.get_all())
+        expected = sorted(self.data)
+        self.assertListEqual(retrieved, expected)
 
 
-class DbmdbConcurrencyTest(unittest.TestCase):
+class DBConcurrencyTest(unittest.TestCase):
     """
     Tests to check correctness of concurrent saving from different instances.
     """
     def setUp(self):
-        self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)})
-                     for i in range(0,10)]
+        self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
+        self.root_directory = get_db_path()
+        self.params = {
+            "dbm_size": 3,
+            "subfolder_size": 1,
+            "first_key": 0
+        }
+        self.router = OriginalRouter(self.root_directory, params=self.params)
+        self.db = DB(self.router)
+        self.db.create()
+
         self.threads_number = 5
         self.processes_number = 5
-        self.db = dbmdb.create_db(root_directory=get_dbmdb_path(), dbm_size=3, subfolder_size=1)
 
     def tearDown(self):
-        shutil.rmtree(self.db.router.root_directory, ignore_errors=True)
+        shutil.rmtree(self.root_directory, ignore_errors=True)
         self.db = None
 
     #@unittest.skip("skipping checking threads")
-    def test_threaded_save(self):
-        def save_in_thread(root_directory, data_to_save, lock):
+    def test_save_in_threads(self):
+        def save_in_thread(db, data_to_save, lock):
             """ helper function to run in thread """
-            mydb = dbmdb.get_db(root_directory)
-            writer = mydb.get_writer(threadlock=lock)
-            for k, v in data_to_save:
-                writer.save_value(k, v)
-            writer.close()
+            with db.writer() as writer:
+                for k, v in data_to_save:
+                    writer[k] = v
 
         import threading
         lock = threading.Lock()
@@ -387,7 +307,7 @@ class DbmdbConcurrencyTest(unittest.TestCase):
         threads = [
             threading.Thread(
                 target=save_in_thread,
-                args=[self.db.router.root_directory, self.data[(i*coef):((i+1)*coef)],lock]
+                args=[self.db, self.data, lock]
             )
             for i in range(self.threads_number)
         ]
@@ -395,19 +315,20 @@ class DbmdbConcurrencyTest(unittest.TestCase):
         for thread in threads: thread.join()
 
         expected = sorted(self.data)
-        retrieved = sorted([(k, v) for k,v in self.db.get_all()])
+        retrieved = sorted([(int(k), v) for k,v in self.db.reader().get_all()])
 
         self.assertListEqual(retrieved, expected)
 
-    #@unittest.skip("skipping checking multiple processes")
-    def test_multiprocessing_save(self):
+    # @unittest.skip("skipping checking multiple processes")
+    def test_save_in_multiple_processes(self):
 
         import multiprocessing
         coef = len(self.data) // self.processes_number
         processes = [
             multiprocessing.Process(
                 target=save_in_process,
-                args=[self.db.router.root_directory, self.data[(i*coef):((i+1)*coef)]]
+                # args=[self.db.root, self.data[(i*coef):((i+1)*coef)]]
+                args=[self.db.root, self.data]
             )
             for i in range(self.processes_number)
         ]
@@ -415,7 +336,7 @@ class DbmdbConcurrencyTest(unittest.TestCase):
         for process in processes: process.join()
 
         expected = sorted(self.data)
-        retrieved = sorted([(k, v) for k,v in self.db.get_all()])
+        retrieved = sorted([(int(k), v) for k,v in self.db.reader().get_all()])
 
         self.assertListEqual(retrieved, expected)
 
@@ -424,12 +345,13 @@ def save_in_process(root_directory, data_to_save):
     """
     Helper function to run in subprocess.
     """
-    mydb = Dbmdb.from_folder(root_directory)
-    writer = mydb.get_writer()
-    for k, v in data_to_save:
-        writer.save_value(k, v)
-    writer.close()
+    db = DB.load(root_directory)
+    with db.writer() as writer:
+        for k, v in data_to_save:
+            writer[k] = v
 
 
 if __name__ == '__main__':
+    import logging
+    # logging.basicConfig(level=logging.DEBUG, format='%(name)s %(levelname)s %(message)s')
     unittest.main()

@@ -377,13 +377,28 @@ class ReformatTest(unittest.TestCase):
     def test_reformat_as_json(self):
         router = JsonRouter(self.root2, params=self.params)
         new_db = DB(router, basefile_cls=JsonFile, packer_cls=BytesBase64Packer).create()
-        self.db.reformat(new_db=new_db)
+        self.db.reformat(new_db=new_db, read_raw=True)
 
         expected = sorted(self.data)
         with new_db.reader("r") as reader:
             retrieved = sorted([(int(k), CJP.unpack_value(v)) for k,v in reader.get_all()])
 
         self.assertListEqual(retrieved, expected)
+
+    def test_reformat_from_json(self):
+        router = JsonRouter(self.root2, params=self.params)
+        db2 = DB(router, basefile_cls=JsonFile, packer_cls=BytesBase64Packer).create()
+        self.db.reformat(new_db=db2, read_raw=True)
+
+        router = OriginalRouter(self.root3, params=self.params)
+        db3 = DB(router, basefile_cls=DbmFile, packer_cls=CJP).create()
+        db2.reformat(new_db=db3)
+
+        expected = sorted(self.data)
+        with db3.reader("r") as reader:
+            retrieved = sorted([(int(k), v) for k,v in reader.get_all()])
+        self.assertListEqual(retrieved, expected)
+
 
 
 if __name__ == '__main__':

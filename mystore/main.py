@@ -125,13 +125,10 @@ class DB:
         raise MyStoreError("No Config File Found")
 
 
-    def reformat(self, new_db):
-        for filepath in self.router.all_filepaths():
-            with self.basefile_cls(filepath, mode="r") as f:
-                contents = f.items()
-                for k,v in contents:
-                    with new_db.writer("w") as writer:
-                        writer[int(k)] = v
-
-
-# TODO: JSONfile + reformat methods
+    def reformat(self, new_db, read_raw=False):
+        with new_db.writer("w") as writer:
+            with self.reader("r") as reader:
+                for k,v in reader.get_all(raw=read_raw):
+                    writer[int(k)] = v
+    # TODO: this is ugly. Change packers from being hardcoded in configs to some
+    #       kind of value handlers? Keys are always integer?

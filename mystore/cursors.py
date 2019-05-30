@@ -95,3 +95,4 @@ class Reader(Cursor):
                 contents = f.items()
                 for k,v in contents:
                     yield (k, v if raw else self.db.packer_cls.unpack_value(v))
+            lg.debug("filepath read: %s" % filepath)

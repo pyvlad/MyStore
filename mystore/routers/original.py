@@ -1,9 +1,6 @@
 """
-This module contains router classes, i.e. classes
-responsible for mapping keys to subpaths where the
-values are stored:
-- BaseRouter, base class to override.
-- OriginalRouter, original router class mapping integers to dbms.
+This module contains OriginalRouter,
+router class mapping integers to dbm files.
 """
 import logging
 lg = logging.getLogger(__name__)
@@ -12,30 +9,7 @@ import os
 import dbm
 import dbm.gnu
 
-
-class BaseRouter:
-    """
-    Base class responsible for mapping keys to dbm files in the root directory.
-
-    Arguments
-    ---------
-    root_directory: str
-        Base directory where tree of dbm files is stored.
-    params: dict
-        Dictoinary with other parameters used by the 'get_path' method.
-    """
-    def __init__(self, root_directory, params):
-        self.root_directory = root_directory
-        self.params = params
-
-    def get_path(self, key):
-        """
-        Returns path to a child DB.
-        """
-        raise NotImplemented
-
-    def all_filepaths(self):
-        raise NotImplemented
+from .base import BaseRouter
 
 
 class OriginalRouter(BaseRouter):
@@ -44,21 +18,21 @@ class OriginalRouter(BaseRouter):
 
     Arguments
     ---------
-    root_directory: str
+    root_dir: str
         Base directory where tree of dbm files is stored.
     params: dict
         dbm_size: int
-            Number of key-value items in 1 dbm file.
+            Number of key:value items in single dbm file.
         subfolder_size: int
-            Maximum number of dbm files in 1 folder
+            Maximum number of dbm files in one folder
             (if 0 - no subfolders are created).
         first_key: int
             Integer key to start from (default: 1)
     """
-    EXTENSION = "dbm"
+    EXTENSION = ".dbm"
 
-    def __init__(self, root_directory, params):
-        super().__init__(root_directory, params)
+    def __init__(self, root_dir, params):
+        super().__init__(root_dir, params)
         self.dbm_size = params["dbm_size"]
         self.subfolder_size = params["subfolder_size"]
         self.first_key = params["first_key"]
@@ -68,12 +42,12 @@ class OriginalRouter(BaseRouter):
         Returns dbm path derived from integer key.
 
         Example 1:
-        >>> router = Router(root_directory="/tmp/", dbm_size=10, subfolder_size=2)
+        >>> router = Router(root_dir="/tmp/", dbm_size=10, subfolder_size=2)
         >>> router.get_path(22)
         '/tmp/1/0.dbm'
 
         Example 2:
-        >>> router = Router(root_directory="/tmp/", dbm_size=10, subfolder_size=0)
+        >>> router = Router(root_dir="/tmp/", dbm_size=10, subfolder_size=0)
         >>> router.get_path(22)
         '/tmp/2.dbm'
         """
@@ -93,9 +67,9 @@ class OriginalRouter(BaseRouter):
 
         # 3. derive absolute filename
         filepath = os.path.join(
-            os.path.abspath(self.root_directory),
+            os.path.abspath(self.root_dir),
             subfolder_name,
-            "%s.%s" % (filename, self.EXTENSION)
+            "%s" % filename + self.EXTENSION
         )
 
         # 4. make it pretty
@@ -104,20 +78,8 @@ class OriginalRouter(BaseRouter):
         return filepath
 
     def all_filepaths(self):
-        for dirpath, dirnames, filenames in os.walk(self.root_directory):
+        for dirpath, dirnames, filenames in os.walk(self.root_dir):
             for fn in filenames:
                 filepath = os.path.join(dirpath, fn)
                 if dbm.whichdb(filepath) == "dbm.gnu":
-                    yield filepath
-
-
-class JsonRouter(OriginalRouter):
-    EXTENSION = "json"
-
-    def all_filepaths(self):
-        for dirpath, dirnames, filenames in os.walk(self.root_directory):
-            for fn in filenames:
-                filepath = os.path.join(dirpath, fn)
-                _, file_extension = os.path.splitext(filepath)
-                if file_extension[1:] == self.__class__.EXTENSION:
                     yield filepath

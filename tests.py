@@ -29,8 +29,8 @@ class OriginalRouterTest(unittest.TestCase):
     Tests for all things create/initialize DB
     """
     def setUp(self):
-        self.root_directory = get_db_path()
-        os.makedirs(self.root_directory)
+        self.root_dir = get_db_path()
+        os.makedirs(self.root_dir)
 
         sep = os.path.sep
         ext = ".dbm"
@@ -68,7 +68,7 @@ class OriginalRouterTest(unittest.TestCase):
         ]
 
     def tearDown(self):
-        shutil.rmtree(self.root_directory, ignore_errors=True)
+        shutil.rmtree(self.root_dir, ignore_errors=True)
 
     def test_path_retrieval_fk0(self):
         """
@@ -81,8 +81,8 @@ class OriginalRouterTest(unittest.TestCase):
             "subfolder_size": row[1],
             "first_key": 0
         }
-        routers = [OriginalRouter(self.root_directory, params(row)) for row in self.data]
-        expected_values = [os.path.join(self.root_directory, row[3]) for row in self.data]
+        routers = [OriginalRouter(self.root_dir, params(row)) for row in self.data]
+        expected_values = [os.path.join(self.root_dir, row[3]) for row in self.data]
         returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
 
@@ -95,8 +95,8 @@ class OriginalRouterTest(unittest.TestCase):
             "subfolder_size": row[1],
             "first_key": 1
         }
-        routers = [OriginalRouter(self.root_directory, params(row)) for row in self.data]
-        expected_values = [os.path.join(self.root_directory, row[4]) for row in self.data]
+        routers = [OriginalRouter(self.root_dir, params(row)) for row in self.data]
+        expected_values = [os.path.join(self.root_dir, row[4]) for row in self.data]
         returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
 
@@ -166,13 +166,13 @@ class DbmFileTest(unittest.TestCase):
 class DBTestsSetup:
     def setUp(self):
         self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
-        self.root_directory = get_db_path()
+        self.root_dir = get_db_path()
         self.params = {
             "dbm_size": 3,
             "subfolder_size": 1,
             "first_key": 0
         }
-        self.router = OriginalRouter(self.root_directory, params=self.params)
+        self.router = OriginalRouter(self.root_dir, params=self.params)
         self.db = DB(self.router)
         self.db.create()
 
@@ -181,7 +181,7 @@ class DBTestsSetup:
                 writer[k] = v
 
     def tearDown(self):
-        shutil.rmtree(self.root_directory, ignore_errors=True)
+        shutil.rmtree(self.root_dir, ignore_errors=True)
         self.db = None
 
 
@@ -191,10 +191,10 @@ class DBCreateTest(DBTestsSetup, unittest.TestCase):
         Test 'load' method.
         """
         # initialize an existing DB from serialized configs
-        db = DB.load(self.root_directory)
+        db = DB.load(self.root_dir)
 
         # assert that it has same configuration attributes
-        keys_to_compare = ["root_directory", "dbm_size", "subfolder_size", "first_key"]
+        keys_to_compare = ["root_dir", "dbm_size", "subfolder_size", "first_key"]
         params = [[getattr(router, k) for k in keys_to_compare]
                   for router in (self.db.router, db.router)]
 
@@ -220,7 +220,7 @@ class ReaderTest(DBTestsSetup, unittest.TestCase):
         """ """
         retrieved_data = []
 
-        def save_in_thread(root_directory, keys_to_read, lock):
+        def save_in_thread(root_dir, keys_to_read, lock):
             nonlocal retrieved_data
             with self.db.reader(threadlock=lock) as reader:
                 for k in keys_to_read:
@@ -236,7 +236,7 @@ class ReaderTest(DBTestsSetup, unittest.TestCase):
             threading.Thread(
                 target=save_in_thread,
                 args=[
-                    self.root_directory,
+                    self.root_dir,
                     [k for k,v in self.data[(i*coef):((i+1)*coef)]],
                     lock
                 ]
@@ -276,13 +276,13 @@ class DBConcurrencyTest(unittest.TestCase):
     """
     def setUp(self):
         self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
-        self.root_directory = get_db_path()
+        self.root_dir = get_db_path()
         self.params = {
             "dbm_size": 3,
             "subfolder_size": 1,
             "first_key": 0
         }
-        self.router = OriginalRouter(self.root_directory, params=self.params)
+        self.router = OriginalRouter(self.root_dir, params=self.params)
         self.db = DB(self.router)
         self.db.create()
 
@@ -290,7 +290,7 @@ class DBConcurrencyTest(unittest.TestCase):
         self.processes_number = 5
 
     def tearDown(self):
-        shutil.rmtree(self.root_directory, ignore_errors=True)
+        shutil.rmtree(self.root_dir, ignore_errors=True)
         self.db = None
 
     #@unittest.skip("skipping checking threads")
@@ -341,11 +341,11 @@ class DBConcurrencyTest(unittest.TestCase):
         self.assertListEqual(retrieved, expected)
 
 
-def save_in_process(root_directory, data_to_save):
+def save_in_process(root_dir, data_to_save):
     """
     Helper function to run in subprocess.
     """
-    db = DB.load(root_directory)
+    db = DB.load(root_dir)
     with db.writer() as writer:
         for k, v in data_to_save:
             writer[k] = v

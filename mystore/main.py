@@ -44,13 +44,13 @@ class DB:
     """
     def __init__(self, router, basefile_cls=DbmFile, packer_cls=CompressedJsonPacker):
         self.router = router
-        self.root = self.router.root_directory
+        self.root = self.router.root_dir
         self.basefile_cls = basefile_cls
         self.packer_cls = packer_cls
 
     def create(self):
         """
-        Create a new store at self.router.root_directory.
+        Create a new store at self.router.root_dir.
         The folder must be empty or not exist.
         """
         if not os.path.exists(self.root):
@@ -97,16 +97,16 @@ class DB:
             f.write(config_str)
 
     @classmethod
-    def load_config(cls, root_directory):
+    def load_config(cls, root_dir):
         # a. Try loading current config format
-        filepath = os.path.join(root_directory, CONFIG_FILENAME)
+        filepath = os.path.join(root_dir, CONFIG_FILENAME)
         if os.path.exists(filepath):
             with open(filepath, encoding="utf8") as f:
                 config_str = f.read()
             return json.loads(config_str)
 
         # b. Legacy config version (dbmdb)
-        old_filepath = os.path.join(root_directory, DBMDB_FILENAME)
+        old_filepath = os.path.join(root_dir, DBMDB_FILENAME)
         if os.path.exists(old_filepath):
             with open(old_filepath, encoding="utf8") as f:
                 params_str = f.read()

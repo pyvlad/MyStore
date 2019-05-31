@@ -9,7 +9,7 @@ import os
 import sys
 import json
 
-from .basefile import DbmFile, JsonFile
+from .basefiles import DbmFile, JsonFile
 from .routers import OriginalRouter, JsonRouter
 from .packers import CompressedJsonPacker, BytesBase64Packer
 from .cursors import Reader, Writer

@@ -1,7 +1,7 @@
 """
 Simple key:value store, where data is stored in a tree of files.
 """
-from .basefile import DbmFile, JsonFile
+from .basefiles import BaseFile, DbmFile, JsonFile
 from .packers import CompressedJsonPacker, BytesBase64Packer
 from .routers import BaseRouter, OriginalRouter, JsonRouter
 from .main import DB, MyStoreError

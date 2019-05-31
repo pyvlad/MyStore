@@ -11,7 +11,7 @@ import json
 
 from .basefiles import DbmFile, JsonFile
 from .routers import OriginalRouter, JsonRouter
-from .packers import CompressedJsonPacker, BytesBase64Packer
+from .converters import CompressedJsonConverter, Base64CompressedJsonConverter
 from .cursors import Reader, Writer
 
 
@@ -22,10 +22,10 @@ _REGISTRY = {
     for cls in [
         OriginalRouter,
         DbmFile,
-        CompressedJsonPacker,
+        CompressedJsonConverter,
         JsonFile,
         JsonRouter,
-        BytesBase64Packer
+        Base64CompressedJsonConverter
 ]}
 
 
@@ -42,11 +42,11 @@ class DB:
     """
     Main class which represents the key:value store.
     """
-    def __init__(self, router, basefile_cls=DbmFile, packer_cls=CompressedJsonPacker):
+    def __init__(self, router, basefile_cls=DbmFile, converter_cls=CompressedJsonConverter):
         self.router = router
         self.root = self.router.root_dir
         self.basefile_cls = basefile_cls
-        self.packer_cls = packer_cls
+        self.converter = converter_cls()
 
     def create(self):
         """
@@ -72,7 +72,7 @@ class DB:
         return cls(
             router,
             basefile_cls=_REGISTRY[config["basefile_cls"]],
-            packer_cls=_REGISTRY[config["packer_cls"]]
+            converter_cls=_REGISTRY[config["converter_cls"]]
         )
 
     def reader(self, mode="R", threadlock=None):
@@ -87,7 +87,7 @@ class DB:
     def dump_config(self):
         config = {
             "basefile_cls": self.basefile_cls.__name__,
-            "packer_cls": self.packer_cls.__name__,
+            "converter_cls": self.converter.__class__.__name__,
             "router_cls": self.router.__class__.__name__,
             "params": self.router.params
         }
@@ -113,7 +113,7 @@ class DB:
             params = json.loads(params_str)
             return {
                 "basefile_cls": DbmFile.__name__,
-                "packer_cls": CompressedJsonPacker.__name__,
+                "converter_cls": CompressedJsonConverter.__name__,
                 "router_cls": OriginalRouter.__name__,
                 "params": {
                     "dbm_size": params["dbm_size"],
@@ -125,10 +125,10 @@ class DB:
         raise MyStoreError("No Config File Found")
 
 
-    def reformat(self, new_db, read_raw=False):
+    def reformat(self, new_db):
         with new_db.writer("w") as writer:
             with self.reader("r") as reader:
-                for k,v in reader.get_all(raw=read_raw):
+                for k,v in reader.get_all():
                     writer[int(k)] = v
     # TODO: this is ugly. Change packers from being hardcoded in configs to some
     #       kind of value handlers? Keys are always integer?

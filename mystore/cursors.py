@@ -50,7 +50,7 @@ class Writer(Cursor):
             else:
                 self._close_opened_file()
                 self._file = self.db.basefile_cls(filepath, mode=self.mode)
-            self._file[k] = self.db.packer_cls.pack_value(v)
+            self._file[k] = self.db.converter.dump(v)
 
 
 class Reader(Cursor):
@@ -71,7 +71,7 @@ class Reader(Cursor):
             v = self._file[k]
             if raw:
                 return v
-        return self.db.packer_cls.unpack_value(v)
+        return self.db.converter.load(v)
 
     def get_many(self, keys, raw=False):
         """
@@ -94,5 +94,5 @@ class Reader(Cursor):
             with self.db.basefile_cls(filepath, mode=self.mode) as f:
                 contents = f.items()
                 for k,v in contents:
-                    yield (k, v if raw else self.db.packer_cls.unpack_value(v))
+                    yield (k, v if raw else self.db.converter.load(v))
             lg.debug("filepath read: %s" % filepath)

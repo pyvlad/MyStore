@@ -14,7 +14,8 @@ from mystore import DB
 from mystore import DbmFile, JsonFile
 from mystore import OriginalRouter, JsonRouter
 from mystore import MyStoreError
-from mystore import CompressedJsonPacker as CJP, BytesBase64Packer
+from mystore import CompressedJsonConverter as CJC, Base64CompressedJsonConverter
+from mystore import handlers
 
 
 def get_db_path():
@@ -115,9 +116,10 @@ class DbmFileTest(unittest.TestCase):
             99: {"name": "ninety nine"},
             100: None,
         }
+        cls.converter = CJC()
         with DbmFile(filepath, "w") as f:
             for k, v in testdata.items():
-                f[k] = CJP.pack_value(v)
+                f[k] = cls.converter.dump(v)
         cls._filepath = filepath
         cls._testdata = testdata
 
@@ -141,12 +143,12 @@ class DbmFileTest(unittest.TestCase):
     def test_get(self):
         keys = [1, 100]
         testdata_values = [self._testdata[key] for key in keys]
-        values = [CJP.unpack_value(self.dbmfile[key]) for key in keys]
+        values = [self.converter.load(self.dbmfile[key]) for key in keys]
         self.assertEqual(values, testdata_values)
 
     def test_get_raw(self):
         keys = [1, 100]
-        testdata_values = [CJP.pack_value(self._testdata[key])[8:] for key in keys]
+        testdata_values = [self.converter.dump(self._testdata[key])[8:] for key in keys]
         # bytes 4-8 are for timestamp:
         # http://www.onicos.com/staff/iz/formats/gzip.html
         values = [self.dbmfile[key][8:] for key in keys]
@@ -159,7 +161,7 @@ class DbmFileTest(unittest.TestCase):
         )
 
     def test_get_all_items(self):
-        all_values = {int(k): CJP.unpack_value(v) for k, v in self.dbmfile.items()}
+        all_values = {int(k): self.converter.load(v) for k, v in self.dbmfile.items()}
         self.assertDictEqual(all_values, self._testdata)
 
 
@@ -364,6 +366,7 @@ class ReformatTest(unittest.TestCase):
         }
         self.router = OriginalRouter(self.root1, params=self.params)
         self.db = DB(self.router).create()
+        self.converter = CJC()
         with self.db.writer() as writer:
             for k, v in self.data:
                 writer[k] = v
@@ -376,22 +379,28 @@ class ReformatTest(unittest.TestCase):
 
     def test_reformat_as_json(self):
         router = JsonRouter(self.root2, params=self.params)
-        new_db = DB(router, basefile_cls=JsonFile, packer_cls=BytesBase64Packer).create()
-        self.db.reformat(new_db=new_db, read_raw=True)
+        new_db = DB(router, JsonFile, Base64CompressedJsonConverter).create()
+        self.db.converter._load_handlers = [] # read raw values
+        new_db.converter._dump_handlers = [handlers.bytes_to_base64_string]
+        self.db.reformat(new_db=new_db)
 
         expected = sorted(self.data)
         with new_db.reader("r") as reader:
-            retrieved = sorted([(int(k), CJP.unpack_value(v)) for k,v in reader.get_all()])
+            retrieved = sorted([(int(k), v) for k,v in reader.get_all()])
 
         self.assertListEqual(retrieved, expected)
 
     def test_reformat_from_json(self):
         router = JsonRouter(self.root2, params=self.params)
-        db2 = DB(router, basefile_cls=JsonFile, packer_cls=BytesBase64Packer).create()
-        self.db.reformat(new_db=db2, read_raw=True)
+        db2 = DB(router, JsonFile, Base64CompressedJsonConverter).create()
+        self.db.converter._load_handlers = [] # read raw values
+        db2.converter._dump_handlers = [handlers.bytes_to_base64_string]
+        self.db.reformat(new_db=db2)
 
         router = OriginalRouter(self.root3, params=self.params)
-        db3 = DB(router, basefile_cls=DbmFile, packer_cls=CJP).create()
+        db3 = DB(router, DbmFile, CJC).create()
+        db2.converter._load_handlers = [handlers.bytes_from_base64_string] # read bytes
+        db3.converter._dump_handlers = [] # write bytes
         db2.reformat(new_db=db3)
 
         expected = sorted(self.data)

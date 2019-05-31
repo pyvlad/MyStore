@@ -9,40 +9,25 @@ import os
 import sys
 import json
 
-from .basefiles import DbmFile, JsonFile
-from .routers import OriginalRouter, JsonRouter
-from .converters import CompressedJsonConverter, Base64CompressedJsonConverter
+from .basefiles import BaseFile, DbmFile
+from .routers import BaseRouter, OriginalRouter
+from .converters import BaseConverter, CompressedJsonConverter as CJC
 from .cursors import Reader, Writer
 
 
 DBMDB_FILENAME = ".dbmdb.json"
 CONFIG_FILENAME = "config"
-_REGISTRY = {
-    cls.__name__: cls
-    for cls in [
-        OriginalRouter,
-        DbmFile,
-        CompressedJsonConverter,
-        JsonFile,
-        JsonRouter,
-        Base64CompressedJsonConverter
-]}
 
 
 class MyStoreError(OSError):
     pass
 
 
-def register_cls(cls):
-    global _REGISTRY
-    _REGISTRY[cls.__name__] = cls
-
-
 class DB:
     """
     Main class which represents the key:value store.
     """
-    def __init__(self, router, basefile_cls=DbmFile, converter_cls=CompressedJsonConverter):
+    def __init__(self, router, basefile_cls=DbmFile, converter_cls=CJC):
         self.router = router
         self.root = self.router.root_dir
         self.basefile_cls = basefile_cls
@@ -66,13 +51,13 @@ class DB:
         Get an instance representing an existing store.
         """
         config = cls.load_config(root)
-        router_cls = _REGISTRY[config["router_cls"]]
+        router_cls = cls.get_router_classes()[config["router_cls"]]
         router_params = config["params"]
         router = router_cls(root, router_params)
         return cls(
             router,
-            basefile_cls=_REGISTRY[config["basefile_cls"]],
-            converter_cls=_REGISTRY[config["converter_cls"]]
+            basefile_cls=cls.get_basefile_classes()[config["basefile_cls"]],
+            converter_cls=cls.get_converter_classes()[config["converter_cls"]]
         )
 
     def reader(self, mode="R", threadlock=None):
@@ -113,7 +98,7 @@ class DB:
             params = json.loads(params_str)
             return {
                 "basefile_cls": DbmFile.__name__,
-                "converter_cls": CompressedJsonConverter.__name__,
+                "converter_cls": CJC.__name__,
                 "router_cls": OriginalRouter.__name__,
                 "params": {
                     "dbm_size": params["dbm_size"],
@@ -130,5 +115,16 @@ class DB:
             with self.reader("r") as reader:
                 for k,v in reader.get_all():
                     writer[int(k)] = v
-    # TODO: this is ugly. Change packers from being hardcoded in configs to some
-    #       kind of value handlers? Keys are always integer?
+    # TODO: Keys are always integer?
+
+    @staticmethod
+    def get_basefile_classes():
+        return {cls.__name__: cls for cls in BaseFile.__subclasses__()}
+
+    @staticmethod
+    def get_router_classes():
+        return {cls.__name__: cls for cls in BaseRouter.__subclasses__()}
+
+    @staticmethod
+    def get_converter_classes():
+        return {cls.__name__: cls for cls in BaseConverter.__subclasses__()}

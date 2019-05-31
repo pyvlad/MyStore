@@ -1,12 +1,12 @@
 """
-This module contains BaseValueConverter, base class responsible
+This module contains BaseConverter, base class responsible
 for converting values into and from the format used to store them on disk.
 """
 import logging
 lg = logging.getLogger(__name__)
 
 
-class BaseValueConverter:
+class BaseConverter:
     """
     Represents a class responsible for converting values
     into and from the format used to store them on disk.

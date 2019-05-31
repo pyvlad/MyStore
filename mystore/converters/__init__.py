@@ -4,7 +4,7 @@ This subpackage contains converter classes nad handler functiions.
 - Converter classes define which handler functions are used by a DB
   to convert values from Python objects to DB format and back.
 """
-from .base import BaseValueConverter
+from .base import BaseConverter
 from . import handlers
 from .classes import (
     CompressedJsonConverter,

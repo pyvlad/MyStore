@@ -380,7 +380,8 @@ class ReformatTest(unittest.TestCase):
     def test_reformat_as_json(self):
         router = JsonRouter(self.root2, params=self.params)
         new_db = DB(router, JsonFile, Base64CompressedJsonConverter).create()
-        self.db.converter._load_handlers = [] # read raw values
+        # monkey patch converters to avoid unneccessary conversions:
+        self.db.converter._load_handlers = []
         new_db.converter._dump_handlers = [handlers.bytes_to_base64_string]
         self.db.reformat(new_db=new_db)
 
@@ -393,12 +394,14 @@ class ReformatTest(unittest.TestCase):
     def test_reformat_from_json(self):
         router = JsonRouter(self.root2, params=self.params)
         db2 = DB(router, JsonFile, Base64CompressedJsonConverter).create()
-        self.db.converter._load_handlers = [] # read raw values
+        # monkey patch converters to avoid unneccessary conversions:
+        self.db.converter._load_handlers = []
         db2.converter._dump_handlers = [handlers.bytes_to_base64_string]
         self.db.reformat(new_db=db2)
 
         router = OriginalRouter(self.root3, params=self.params)
         db3 = DB(router, DbmFile, CJC).create()
+        # monkey patch converters to avoid unneccessary conversions:
         db2.converter._load_handlers = [handlers.bytes_from_base64_string] # read bytes
         db3.converter._dump_handlers = [] # write bytes
         db2.reformat(new_db=db3)

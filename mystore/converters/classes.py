@@ -4,17 +4,17 @@ This module contains different implementations of 'converters'.
 import logging
 lg = logging.getLogger(__name__)
 
-from .base import BaseValueConverter
+from .base import BaseConverter
 from . import handlers
 
 
-class CompressedJsonConverter(BaseValueConverter):
+class CompressedJsonConverter(BaseConverter):
     """ Convert Python objects to/from compressed JSON objects. """
     DUMP_HANDLERS = [handlers.object_to_compressed_json_binary]
     LOAD_HANDLERS = [handlers.object_from_compressed_json_binary]
 
 
-class Base64CompressedJsonConverter(BaseValueConverter):
+class Base64CompressedJsonConverter(BaseConverter):
     """ Convert Python objects to/from base64 encoded
         text strings of compressed JSON objects. """
     DUMP_HANDLERS = [handlers.object_to_compressed_json_binary, handlers.bytes_to_base64_string]

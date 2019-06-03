@@ -1,6 +1,6 @@
 """
-This module contains Reader and Writer classes, responsible
-for reading/writing data to the DB.
+This module contains Reader and Writer classes,
+responsible for reading/writing data to the DB.
 """
 import logging
 lg = logging.getLogger(__name__)

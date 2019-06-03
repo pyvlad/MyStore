@@ -1,7 +1,8 @@
 """
-This subpackage contains converter classes nad handler functiions.
-- Handler functions can convert values to all kinds of formats used to store them on disk.
-- Converter classes define which handler functions are used by a DB
+This subpackage contains converter classes and handler functiions:
+- Handlers are out-of-the-box functions that can convert values
+  to all kinds of formats used to store them on disk.
+- Converters define which handler functions are used by a DB
   to convert values from Python objects to DB format and back.
 """
 from .base import BaseConverter

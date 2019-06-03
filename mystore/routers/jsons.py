@@ -1,6 +1,6 @@
 """
-This module contains OriginalRouter,
-router class mapping integers to dbm files.
+This module contains JsonRouter,
+router class mapping integers to json files.
 """
 import os
 

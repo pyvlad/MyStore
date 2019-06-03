@@ -16,6 +16,7 @@ from mystore import OriginalRouter, JsonRouter
 from mystore import MyStoreError
 from mystore import CompressedJsonConverter as CJC, Base64CompressedJsonConverter
 from mystore import handlers
+from mystore import shortcuts
 
 
 def get_db_path():
@@ -364,9 +365,12 @@ class ReformatTest(unittest.TestCase):
             "subfolder_size": 1,
             "first_key": 0
         }
-        self.router = OriginalRouter(self.root1, params=self.params)
-        self.db = DB(self.router).create()
-        self.converter = CJC()
+        self.db = shortcuts.create_dbmdb(
+            self.root1,
+            self.params["dbm_size"],
+            self.params["subfolder_size"],
+            self.params["first_key"]
+        )
         with self.db.writer() as writer:
             for k, v in self.data:
                 writer[k] = v
@@ -378,12 +382,7 @@ class ReformatTest(unittest.TestCase):
         self.db = None
 
     def test_reformat_as_json(self):
-        router = JsonRouter(self.root2, params=self.params)
-        new_db = DB(router, JsonFile, Base64CompressedJsonConverter).create()
-        # monkey patch converters to avoid unneccessary conversions:
-        self.db.converter._load_handlers = []
-        new_db.converter._dump_handlers = [handlers.bytes_to_base64_string]
-        self.db.reformat(new_db=new_db)
+        new_db = shortcuts.dbmdb_to_jsondb(self.root1, self.root2)
 
         expected = sorted(self.data)
         with new_db.reader("r") as reader:
@@ -392,19 +391,8 @@ class ReformatTest(unittest.TestCase):
         self.assertListEqual(retrieved, expected)
 
     def test_reformat_from_json(self):
-        router = JsonRouter(self.root2, params=self.params)
-        db2 = DB(router, JsonFile, Base64CompressedJsonConverter).create()
-        # monkey patch converters to avoid unneccessary conversions:
-        self.db.converter._load_handlers = []
-        db2.converter._dump_handlers = [handlers.bytes_to_base64_string]
-        self.db.reformat(new_db=db2)
-
-        router = OriginalRouter(self.root3, params=self.params)
-        db3 = DB(router, DbmFile, CJC).create()
-        # monkey patch converters to avoid unneccessary conversions:
-        db2.converter._load_handlers = [handlers.bytes_from_base64_string] # read bytes
-        db3.converter._dump_handlers = [] # write bytes
-        db2.reformat(new_db=db3)
+        db2 = shortcuts.dbmdb_to_jsondb(self.root1, self.root2)
+        db3 = shortcuts.jsondb_to_dbmdb(self.root2, self.root3)
 
         expected = sorted(self.data)
         with db3.reader("r") as reader:

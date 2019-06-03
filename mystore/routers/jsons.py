@@ -4,10 +4,11 @@ router class mapping integers to json files.
 """
 import os
 
+from .base import BaseRouter
 from .original import OriginalRouter
 
 
-class JsonRouter(OriginalRouter):
+class JsonRouter(OriginalRouter, BaseRouter):
     EXTENSION = ".json"
 
     def all_filepaths(self):

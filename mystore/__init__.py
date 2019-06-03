@@ -18,14 +18,4 @@ from .routers import (
 )
 from .main import DB
 from .errors import MyStoreError
-
-
-# ***********************
-#       Shortcuts
-# ***********************
-def get(root):
-    return DB.load(root)
-
-def create_dbmdb(root, dbm_size, subfolder_size, first_key=1):
-    router = Router(root, dbm_size, subfolder_size, first_key)
-    return DB(router, basefile_cls=DbmFile, packer_cls=CompressedJsonConverter).create()
+from .shortcuts import *

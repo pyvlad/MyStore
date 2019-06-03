@@ -16,7 +16,8 @@ from .routers import (
     OriginalRouter,
     JsonRouter
 )
-from .main import DB, MyStoreError
+from .main import DB
+from .errors import MyStoreError
 
 
 # ***********************

@@ -13,14 +13,11 @@ from .basefiles import BaseFile, DbmFile
 from .routers import BaseRouter, OriginalRouter
 from .converters import BaseConverter, CompressedJsonConverter as CJC
 from .cursors import Reader, Writer
+from .errors import MyStoreError
 
 
 DBMDB_FILENAME = ".dbmdb.json"
 CONFIG_FILENAME = "config"
-
-
-class MyStoreError(OSError):
-    pass
 
 
 class DB:

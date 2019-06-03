@@ -32,7 +32,7 @@ def create_dbmdb(root, dbm_size, subfolder_size, first_key=1):
     router = OriginalRouter(
         root,
         params={
-            "dbm_size": dbm_size,
+            "unit_size": dbm_size,
             "subfolder_size": subfolder_size,
             "first_key": first_key
         }

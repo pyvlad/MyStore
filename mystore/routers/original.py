@@ -21,7 +21,7 @@ class OriginalRouter(BaseRouter):
     root_dir: str
         Base directory where tree of dbm files is stored.
     params: dict
-        dbm_size: int
+        unit_size: int
             Number of key:value items in single dbm file.
         subfolder_size: int
             Maximum number of dbm files in one folder
@@ -33,7 +33,7 @@ class OriginalRouter(BaseRouter):
 
     def __init__(self, root_dir, params):
         super().__init__(root_dir, params)
-        self.dbm_size = params["dbm_size"]
+        self.unit_size = params["unit_size"]
         self.subfolder_size = params["subfolder_size"]
         self.first_key = params["first_key"]
 
@@ -42,17 +42,19 @@ class OriginalRouter(BaseRouter):
         Returns dbm path derived from integer key.
 
         Example 1:
-        >>> router = Router(root_dir="/tmp/", dbm_size=10, subfolder_size=2)
+        >>> router = OriginalRouter(root_dir="/tmp/", \
+                params={"unit_size": 10, "subfolder_size":2, "first_key":1})
         >>> router.get_path(22)
         '/tmp/1/0.dbm'
 
         Example 2:
-        >>> router = Router(root_dir="/tmp/", dbm_size=10, subfolder_size=0)
+        >>> router = OriginalRouter(root_dir="/tmp/", \
+                params={"unit_size": 10, "subfolder_size":0, "first_key":1})
         >>> router.get_path(22)
         '/tmp/2.dbm'
         """
         # 1. derive index of dbm file from key value
-        file_index = (key - self.first_key) // self.dbm_size
+        file_index = (key - self.first_key) // self.unit_size
 
         # 2. derive subfolder name and dbm file name from dbm file index
         #   a. don't use subfolders
@@ -83,3 +85,8 @@ class OriginalRouter(BaseRouter):
                 filepath = os.path.join(dirpath, fn)
                 if dbm.whichdb(filepath) == "dbm.gnu":
                     yield filepath
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

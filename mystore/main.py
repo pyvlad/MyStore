@@ -98,7 +98,7 @@ class DB:
                 "converter_cls": CJC.__name__,
                 "router_cls": OriginalRouter.__name__,
                 "params": {
-                    "dbm_size": params["dbm_size"],
+                    "unit_size": params["dbm_size"],
                     "subfolder_size": params["subfolder_size"],
                     "first_key": 1 if params["version"] == 0 else 0
                 }

@@ -37,7 +37,7 @@ class OriginalRouterTest(unittest.TestCase):
         sep = os.path.sep
         ext = ".dbm"
         self.data = [
-            # dbm_size, subfolder_size, key, expected_filename(v1), expected filename(v0)
+            # unit_size, subfolder_size, key, expected_filename(v1), expected filename(v0)
             (1, 0, 0, '0%s'%ext, '-1%s'%(ext)),
             (1, 0, 1, '1%s'%ext, '0%s'%(ext)),
             (1, 0, 7, '7%s'%ext, '6%s'%(ext)),
@@ -79,7 +79,7 @@ class OriginalRouterTest(unittest.TestCase):
         (b) key value
         """
         params = lambda row: {
-            "dbm_size": row[0],
+            "unit_size": row[0],
             "subfolder_size": row[1],
             "first_key": 0
         }
@@ -93,7 +93,7 @@ class OriginalRouterTest(unittest.TestCase):
         Test an older version which assumed that keys start from 1
         """
         params = lambda row: {
-            "dbm_size": row[0],
+            "unit_size": row[0],
             "subfolder_size": row[1],
             "first_key": 1
         }
@@ -171,7 +171,7 @@ class DBTestsSetup:
         self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
         self.root_dir = get_db_path()
         self.params = {
-            "dbm_size": 3,
+            "unit_size": 3,
             "subfolder_size": 1,
             "first_key": 0
         }
@@ -197,7 +197,7 @@ class DBCreateTest(DBTestsSetup, unittest.TestCase):
         db = DB.load(self.root_dir)
 
         # assert that it has same configuration attributes
-        keys_to_compare = ["root_dir", "dbm_size", "subfolder_size", "first_key"]
+        keys_to_compare = ["root_dir", "unit_size", "subfolder_size", "first_key"]
         params = [[getattr(router, k) for k in keys_to_compare]
                   for router in (self.db.router, db.router)]
 
@@ -281,7 +281,7 @@ class DBConcurrencyTest(unittest.TestCase):
         self.data = [(i, {"entry_key":i, "value": "some value %s" % str(i)}) for i in range(0,10)]
         self.root_dir = get_db_path()
         self.params = {
-            "dbm_size": 3,
+            "unit_size": 3,
             "subfolder_size": 1,
             "first_key": 0
         }
@@ -361,13 +361,13 @@ class ReformatTest(unittest.TestCase):
         self.root2 = get_db_path() + "2"
         self.root3 = get_db_path() + "3"
         self.params = {
-            "dbm_size": 7,
+            "unit_size": 7,
             "subfolder_size": 1,
             "first_key": 0
         }
         self.db = shortcuts.create_dbmdb(
             self.root1,
-            self.params["dbm_size"],
+            self.params["unit_size"],
             self.params["subfolder_size"],
             self.params["first_key"]
         )

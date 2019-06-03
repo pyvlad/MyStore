@@ -8,6 +8,7 @@ lg = logging.getLogger(__name__)
 import os
 
 from .basefile import BaseFile
+from mystore.errors import BaseUnitDoesNotExist
 
 
 class DirFile(BaseFile):
@@ -16,8 +17,11 @@ class DirFile(BaseFile):
         return self.path
 
     def __getitem__(self, k):
-        with open(os.path.join(self.dirname, str(k)), "rb") as f:
-            return f.read()
+        try:
+            with open(os.path.join(self.dirname, str(k)), "rb") as f:
+                return f.read()
+        except FileDoesNotExist:
+            return KeyError("No such value.")
 
     def __setitem__(self, k, v):
         with open(os.path.join(self.dirname, str(k)), "wb") as f:
@@ -28,8 +32,11 @@ class DirFile(BaseFile):
 
     def _open(self):
         lg.debug("opening new file handle")
-        if self.mode in ["w", "W"]:
-            if not os.path.exists(self.dirname):
+        if self.mode in ["r", "R"]:
+            if not os.path.exists(self.path):
+                raise BaseUnitDoesNotExist
+        elif self.mode in ["w", "W"]:
+            if not os.path.exists(self.path):
                 self._create_directory()
 
     def keys(self):

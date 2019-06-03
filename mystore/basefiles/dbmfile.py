@@ -10,6 +10,7 @@ import dbm
 import time
 
 from .basefile import BaseFile
+from mystore.errors import BaseUnitDoesNotExist
 
 
 class DbmFile(BaseFile):
@@ -33,7 +34,19 @@ class DbmFile(BaseFile):
     def _open(self):
         lg.debug("opening new file handle")
         if self.mode == "r":
-            return dbm.open(self.path, "r")
+            try:
+                return dbm.open(self.path, "r")
+            except dbm.error as e:
+                if str(e).startswith("need 'c' or 'n'"):
+                    raise BaseUnitDoesNotExist
+                raise
+        elif self.mode == "R":
+            try:
+                return self._loop_open("r")
+            except dbm.error as e:
+                if str(e).startswith("need 'c' or 'n'"):
+                    raise BaseUnitDoesNotExist
+                raise
         elif self.mode == "w":
             try:
                 handle = dbm.open(self.path, "c")
@@ -44,8 +57,6 @@ class DbmFile(BaseFile):
                 else:
                     raise
             return handle
-        elif self.mode == "R":
-            return self._loop_open("r")
         elif self.mode == "W":
             return self._loop_open("c")
         else:

@@ -17,6 +17,7 @@ from mystore import MyStoreError
 from mystore import CompressedJsonConverter as CJC, Base64CompressedJsonConverter
 from mystore import handlers
 from mystore import shortcuts
+from mystore import errors
 
 
 def get_db_path():
@@ -219,6 +220,18 @@ class ReaderTest(DBTestsSetup, unittest.TestCase):
             retrieved_data = [(k, reader[k]) for k, v in self.data]
         self.assertListEqual(retrieved_data, self.data)
 
+    def test_getitem_nonexisting_file_r(self):
+        """ """
+        with self.assertRaises(errors.BaseUnitDoesNotExist):
+            with self.db.reader("r") as reader:
+                retrieved_value = reader[10*10]
+
+    def test_getitem_nonexisting_file_R(self):
+        """ """
+        with self.assertRaises(errors.BaseUnitDoesNotExist):
+            with self.db.reader("R") as reader:
+                retrieved_value = reader[10*10]
+
     def test_get_value_concurrent(self):
         """ """
         retrieved_data = []
@@ -263,6 +276,18 @@ class ReaderTest(DBTestsSetup, unittest.TestCase):
             retrieved_data = reader.get_many(keys=keys)
             retrieved = sorted(retrieved_data.items())
         expected = sorted(self.data)
+        self.assertListEqual(retrieved, expected)
+
+    def test_get_many_with_missing(self):
+        """ """
+        keys = [k for k, v in self.data]
+        extra_keys = [max(keys) + 1, -1000, 1000]
+        keys += extra_keys
+        with self.db.reader() as reader:
+            retrieved_data = reader.get_many(keys=keys)
+            retrieved = sorted(retrieved_data.items())
+        expected = self.data + [(k, None) for k in extra_keys]
+        expected = sorted(expected)
         self.assertListEqual(retrieved, expected)
 
     def test_get_all(self):

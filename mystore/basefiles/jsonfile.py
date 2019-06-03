@@ -9,6 +9,7 @@ import os
 import json
 
 from .basefile import BaseFile
+from mystore.errors import BaseUnitDoesNotExist
 
 
 class JsonFile(BaseFile):
@@ -26,16 +27,20 @@ class JsonFile(BaseFile):
 
     def _open(self):
         lg.debug("opening new file handle")
-        if self.mode == "w":
-            if not os.path.exists(self.dirname):
-                self._create_directory()
-        if self.mode in ["w", "r"]:
+        if self.mode == "r":
             if os.path.exists(self.path):
                 with open(self.path, "r") as f:
                     content = f.read()
-                    content = json.loads(content)
-                    return content
+                return json.loads(content)
             else:
+                raise BaseUnitDoesNotExist
+        elif self.mode == "w":
+            if os.path.exists(self.dirname):
+                with open(self.path, "r") as f:
+                    content = f.read()
+                return json.loads(content)
+            else:
+                self._create_directory()
                 return {}
         else:
             raise OSError("Mode %s is not supported by JsonFile")

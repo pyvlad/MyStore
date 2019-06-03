@@ -5,6 +5,8 @@ responsible for reading/writing data to the DB.
 import logging
 lg = logging.getLogger(__name__)
 
+from .errors import BaseUnitDoesNotExist
+
 
 class DummyThreadLock:
     def __enter__(self):
@@ -58,9 +60,6 @@ class Reader(Cursor):
         super().__init__(db, mode, threadlock)
 
     def __getitem__(self, k):
-        return self.get(k, raw=False)
-
-    def get(self, k, raw=False):
         filepath = self.db.router.get_path(k)
         with self.threadlock:
             if self._file and (self._file.path == filepath):
@@ -69,22 +68,24 @@ class Reader(Cursor):
                 self._close_opened_file()
                 self._file = self.db.basefile_cls(filepath, mode=self.mode)
             v = self._file[k]
-            if raw:
-                return v
         return self.db.converter.load(v)
 
-    def get_many(self, keys, raw=False):
+    def get(self, k, default=None):
+        """ """
+        try:
+            return self[k]
+        except (BaseUnitDoesNotExist, KeyError):
+            return default
+
+    def get_many(self, keys, default=None):
         """
         Get many values at once (to minimize open/close calls) and return as dict.
         Key order is not preserved.
         """
         keys_and_paths = sorted(((k, self.db.router.get_path(k)) for k in keys), key=lambda x:x[1])
-        data = {}
-        for k, path in keys_and_paths:
-            data[k] = self.get(k, raw=raw)
-        return data
+        return {k: self.get(k, default) for k, path in keys_and_paths}
 
-    def get_all(self, raw=False):
+    def get_all(self):
         """
         [Generator]
         Return all values:
@@ -94,5 +95,5 @@ class Reader(Cursor):
             with self.db.basefile_cls(filepath, mode=self.mode) as f:
                 contents = f.items()
                 for k,v in contents:
-                    yield (k, v if raw else self.db.converter.load(v))
+                    yield (k, self.db.converter.load(v))
             lg.debug("filepath read: %s" % filepath)

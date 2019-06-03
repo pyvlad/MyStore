@@ -28,6 +28,18 @@ class OriginalRouter(BaseRouter):
             (if 0 - no subfolders are created).
         first_key: int
             Integer key to start from (default: 1)
+
+    Example 1:
+    >>> router = OriginalRouter(root_dir="/tmp/", \
+            params={"unit_size": 10, "subfolder_size":2, "first_key":1})
+    >>> router.get_path(22)
+    '/tmp/1/0.dbm'
+
+    Example 2:
+    >>> router = OriginalRouter(root_dir="/tmp/", \
+            params={"unit_size": 10, "subfolder_size":0, "first_key":1})
+    >>> router.get_path(22)
+    '/tmp/2.dbm'
     """
     EXTENSION = ".dbm"
 
@@ -40,18 +52,6 @@ class OriginalRouter(BaseRouter):
     def get_path(self, key):
         """
         Returns dbm path derived from integer key.
-
-        Example 1:
-        >>> router = OriginalRouter(root_dir="/tmp/", \
-                params={"unit_size": 10, "subfolder_size":2, "first_key":1})
-        >>> router.get_path(22)
-        '/tmp/1/0.dbm'
-
-        Example 2:
-        >>> router = OriginalRouter(root_dir="/tmp/", \
-                params={"unit_size": 10, "subfolder_size":0, "first_key":1})
-        >>> router.get_path(22)
-        '/tmp/2.dbm'
         """
         # 1. derive index of dbm file from key value
         file_index = (key - self.first_key) // self.unit_size

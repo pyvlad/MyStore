@@ -4,7 +4,8 @@ Simple key:value store, where data is stored in a tree of files.
 from .basefiles import (
     BaseFile,
     DbmFile,
-    JsonFile
+    JsonFile,
+    DirFile
 )
 from .converters import (
     CompressedJsonConverter,
@@ -14,7 +15,8 @@ from .converters import (
 from .routers import (
     BaseRouter,
     OriginalRouter,
-    JsonRouter
+    JsonRouter,
+    DirRouter
 )
 from .main import DB
 from .errors import MyStoreError

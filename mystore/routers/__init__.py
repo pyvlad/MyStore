@@ -6,3 +6,4 @@ at which the values are stored.
 from .base import BaseRouter
 from .original import OriginalRouter
 from .jsons import JsonRouter
+from .dirs import DirRouter

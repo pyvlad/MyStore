@@ -9,11 +9,13 @@ lg = logging.getLogger(__name__)
 from .main import DB
 from .routers import (
     OriginalRouter,
-    JsonRouter
+    JsonRouter,
+    DirRouter
 )
 from .basefiles import (
     DbmFile,
-    JsonFile
+    JsonFile,
+    DirFile
 )
 from .converters import (
     CompressedJsonConverter,
@@ -41,7 +43,7 @@ def create_dbmdb(root, dbm_size, subfolder_size, first_key=1):
 
 
 def dbmdb_to_jsondb(old_path, new_path):
-    """ Reformat existing dbmdb with JSON files instead of gdbm files. """
+    """ Reformat existing dbmdb to db with JSON files instead of gdbm files. """
     old_db = get_db(old_path)
     router = JsonRouter(new_path, params=old_db.router.params)
     new_db = DB(router, JsonFile, Base64CompressedJsonConverter).create()
@@ -59,6 +61,30 @@ def jsondb_to_dbmdb(old_path, new_path):
     new_db = DB(router, DbmFile, CompressedJsonConverter).create()
     # monkey patch converters to avoid unneccessary conversions:
     old_db.converter._load_handlers = [handlers.bytes_from_base64_string] # read bytes
+    new_db.converter._dump_handlers = [] # write bytes
+    old_db.reformat(new_db)
+    return new_db
+
+
+def dbmdb_to_filedb(old_path, new_path, new_router_params):
+    """ Reformat existing dbmdb to db with plain files instead of gdbm files. """
+    old_db = get_db(old_path)
+    router = DirRouter(new_path, params=new_router_params)
+    new_db = DB(router, DirFile, CompressedJsonConverter).create()
+    # monkey patch converters to avoid unneccessary conversions:
+    old_db.converter._load_handlers = []
+    new_db.converter._dump_handlers = []
+    old_db.reformat(new_db)
+    return new_db
+
+
+def filedb_to_dbmdb(old_path, new_path, new_router_params):
+    """ Reformat existing filedb to dbmdb with plain files instead of gdbm files. """
+    old_db = get_db(old_path)
+    router = OriginalRouter(new_path, params=new_router_params)
+    new_db = DB(router, DbmFile, CompressedJsonConverter).create()
+    # monkey patch converters to avoid unneccessary conversions:
+    old_db.converter._load_handlers = [] # read bytes
     new_db.converter._dump_handlers = [] # write bytes
     old_db.reformat(new_db)
     return new_db

@@ -5,6 +5,7 @@ responsible for mapping keys to files storing data in DB directory.
 import logging
 lg = logging.getLogger(__name__)
 
+import os
 import abc
 
 
@@ -21,7 +22,7 @@ class BaseRouter(metaclass=abc.ABCMeta):
         Dictoinary with other parameters used by the 'get_path' method.
     """
     def __init__(self, root_dir, params):
-        self.root_dir = root_dir
+        self.root_dir = os.path.abspath(os.path.expanduser(root_dir))
         self.params = params
 
     @abc.abstractmethod

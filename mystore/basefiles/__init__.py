@@ -5,3 +5,4 @@ BaseFile represents basic storage unit used in the package.
 from .basefile import BaseFile
 from .dbmfile import DbmFile
 from .jsonfile import JsonFile
+from .dirfile import DirFile

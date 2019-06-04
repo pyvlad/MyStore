@@ -31,13 +31,13 @@ class OriginalRouter(BaseRouter):
 
     Example 1:
     >>> router = OriginalRouter(root_dir="/tmp/", \
-            params={"unit_size": 10, "subfolder_size":2, "first_key":1}, extension="")
+            params={"unit_size": 10, "subfolder_size":2, "first_key":1}, extension=".dbm")
     >>> router.get_path(22)
     '/tmp/1/0.dbm'
 
     Example 2:
     >>> router = OriginalRouter(root_dir="/tmp/", \
-            params={"unit_size": 10, "subfolder_size":0, "first_key":1}, extension="")
+            params={"unit_size": 10, "subfolder_size":0, "first_key":1}, extension=".dbm")
     >>> router.get_path(22)
     '/tmp/2.dbm'
     """

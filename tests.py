@@ -446,6 +446,25 @@ class ReformatTest(unittest.TestCase):
             retrieved = sorted([(int(k), v) for k,v in reader.get_all()])
         self.assertListEqual(retrieved, expected)
 
+    def test_reformat_as_leveldb(self):
+        from mystore.basefiles import LeveldbFile
+
+        new_db = DB(self.root2, self.params, OriginalRouter, LeveldbFile, CJC)
+        new_db.create()
+        # monkey patch converters to avoid unneccessary conversions:
+        self.db.converter._load_handlers = []
+        new_db.converter._dump_handlers = []
+        self.db.reformat(new_db)
+
+        expected = sorted(self.data)
+        with new_db.reader("r") as reader:
+            retrieved = sorted([(int(k), v) for k,v in reader.get_all()])
+        self.assertListEqual(retrieved, expected)
+
+        with new_db.reader("r") as reader:
+            keys = [k for k,v in self.data]
+            retrieved = sorted([(int(k), v) for k,v in reader.get_many(keys).items()])
+        self.assertListEqual(retrieved, expected)
 
 
 if __name__ == '__main__':

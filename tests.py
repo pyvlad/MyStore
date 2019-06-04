@@ -166,6 +166,10 @@ class DbmFileTest(unittest.TestCase):
         all_values = {int(k): self.converter.load(v) for k, v in self.dbmfile.items()}
         self.assertDictEqual(all_values, self._testdata)
 
+    def test_unsupported_mode(self):
+        with self.assertRaises(MyStoreError):
+            dbmfile = DbmFile(self._filepath, mode="yo")
+
 
 class DBTestsSetup:
     def setUp(self):

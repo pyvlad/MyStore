@@ -31,36 +31,37 @@ class DbmFile(BaseFile):
         return {k: self[k] for k in self.keys()}.items()
 
     # ******* implementation details *******
-    def _open(self):
-        lg.debug("opening new file handle")
-        if self.mode == "r":
-            try:
-                return dbm.open(self.path, "r")
-            except dbm.error as e:
-                if str(e).startswith("need 'c' or 'n'"):
-                    raise BaseUnitDoesNotExist
-                raise
-        elif self.mode == "R":
-            try:
-                return self._loop_open("r")
-            except dbm.error as e:
-                if str(e).startswith("need 'c' or 'n'"):
-                    raise BaseUnitDoesNotExist
-                raise
-        elif self.mode == "w":
-            try:
+    def _open_for_read(self):
+        try:
+            handle = dbm.open(self.path, "r")
+        except dbm.error as e:
+            if str(e).startswith("need 'c' or 'n'"):
+                raise BaseUnitDoesNotExist
+            raise
+        return handle
+
+    def _open_for_read_loop(self):
+        try:
+            handle = self._loop_open("r")
+        except dbm.error as e:
+            if str(e).startswith("need 'c' or 'n'"):
+                raise BaseUnitDoesNotExist
+            raise
+        return handle
+
+    def _open_for_write(self):
+        try:
+            handle = dbm.open(self.path, "c")
+        except dbm.gnu.error as e:
+            if e.errno == 2:
+                self._create_directory()
                 handle = dbm.open(self.path, "c")
-            except dbm.gnu.error as e:
-                if e.errno == 2:
-                    self._create_directory()
-                    handle = dbm.open(self.path, "c")
-                else:
-                    raise
-            return handle
-        elif self.mode == "W":
-            return self._loop_open("c")
-        else:
-            raise OSError("Unsupported dbm mode: %s" % self.mode)
+            else:
+                raise
+        return handle
+
+    def _open_for_write_loop(self):
+        return self._loop_open("c")
 
     def _loop_open(self, mode):
         """

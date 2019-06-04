@@ -19,34 +19,34 @@ class JsonFile(BaseFile):
     def __setitem__(self, k, v):
         self._handle[str(k)] = v
 
+    def keys(self):
+        return list(self._handle.keys())
+
+    def items(self):
+        return self._handle.items()
+
     def close(self):
         if self.mode == "w":
             content = json.dumps(self._handle)
             with open(self.path, "w") as f:
                 f.write(content)
 
-    def _open(self):
-        lg.debug("opening new file handle")
-        if self.mode == "r":
-            if os.path.exists(self.path):
-                with open(self.path, "r") as f:
-                    content = f.read()
-                return json.loads(content)
-            else:
-                raise BaseUnitDoesNotExist
-        elif self.mode == "w":
-            if os.path.exists(self.dirname):
-                with open(self.path, "r") as f:
-                    content = f.read()
-                return json.loads(content)
-            else:
-                self._create_directory()
-                return {}
+    # ******* implementation details *******
+    def _open_for_read(self):
+        if os.path.exists(self.path):
+            with open(self.path, "r") as f:
+                content = f.read()
+            handle = json.loads(content)
         else:
-            raise OSError("Mode %s is not supported by JsonFile")
+            raise BaseUnitDoesNotExist
+        return handle
 
-    def keys(self):
-        return list(self._handle.keys())
-
-    def items(self):
-        return self._handle.items()
+    def _open_for_write(self):
+        if os.path.exists(self.dirname):
+            with open(self.path, "r") as f:
+                content = f.read()
+            handle = json.loads(content)
+        else:
+            self._create_directory()
+            handle = {}
+        return handle

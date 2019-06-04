@@ -1,5 +1,5 @@
 """
-This module contains DirRouter,
+This module contains StringFormatRouter,
 router class mapping integers to directories of files.
 """
 import logging
@@ -10,7 +10,7 @@ import os
 from .base import BaseRouter
 
 
-class DirRouter(BaseRouter):
+class StringFormatRouter(BaseRouter):
     """
     BaseRouter subclass mapping integer keys to directory file paths.
 
@@ -25,33 +25,31 @@ class DirRouter(BaseRouter):
             Number of digits for each subfolder level.
 
     Example 1:
-    >>> router = DirRouter(root_dir="/tmp/", \
-            params={"digits": 7, "subfolder_digits":[2,2]})
+    >>> router = StringFormatRouter(root_dir="/tmp/", \
+            params={"digits": 7, "subfolder_digits":[2,2]}, extension="")
     >>> router.get_path(22)
-    '/tmp/00/00.dir'
+    '/tmp/00/00'
 
     Example 2:
-    >>> router = DirRouter(root_dir="/tmp/", \
-            params={"digits": 7, "subfolder_digits":[2,2]})
+    >>> router = StringFormatRouter(root_dir="/tmp/", \
+            params={"digits": 7, "subfolder_digits":[2,2]}, extension="")
     >>> router.get_path(1234567)
-    '/tmp/12/34.dir'
+    '/tmp/12/34'
 
     Example 3:
-    >>> router = DirRouter(root_dir="/tmp/", \
-            params={"digits": 7, "subfolder_digits":[2,2]})
+    >>> router = StringFormatRouter(root_dir="/tmp/", \
+            params={"digits": 7, "subfolder_digits":[2,2]}, extension="")
     >>> router.get_path(123456789)
-    '/tmp/1234/56.dir'
+    '/tmp/1234/56'
 
     Example 4:
-    >>> router = DirRouter(root_dir="/tmp/", \
-            params={"digits": 2, "subfolder_digits":[]})
+    >>> router = StringFormatRouter(root_dir="/tmp/", \
+            params={"digits": 2, "subfolder_digits":[]}, extension="")
     >>> router.get_path(12)
-    '/tmp/data.dir'
+    '/tmp/data'
     """
-    EXTENSION = ".dir"
-
-    def __init__(self, root_dir, params):
-        super().__init__(root_dir, params)
+    def __init__(self, root_dir, params, extension):
+        super().__init__(root_dir, params, extension)
         self.digits = params["digits"]                      # e.g. 7
         self.subfolder_digits = params["subfolder_digits"]  # e.g. [2, 2]
         self.cums = [sum(self.subfolder_digits[:(i+1)])
@@ -70,15 +68,8 @@ class DirRouter(BaseRouter):
                 subfolders += [str_key[i:j]]
         else:
             subfolders = ["data"]
-        path = os.path.join(self.root_dir, *subfolders) + self.EXTENSION
-        return path
-
-    def all_filepaths(self):
-        for dirpath, dirnames, filenames in os.walk(self.root_dir):
-            _, dir_extension = os.path.splitext(dirpath)
-            if dir_extension == self.__class__.EXTENSION:
-                yield dirpath
-
+        path = os.path.join(self.root_dir, *subfolders)
+        return path + self.extension
 
 if __name__ == "__main__":
     import doctest

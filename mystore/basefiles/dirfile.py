@@ -12,6 +12,8 @@ from mystore.errors import BaseUnitDoesNotExist
 
 
 class DirFile(BaseFile):
+    EXTENSION = ".dir"
+
     @property
     def dirname(self):
         return self.path
@@ -52,3 +54,10 @@ class DirFile(BaseFile):
     def _open_for_write_loop(self):
         if not os.path.exists(self.path):
             self._create_directory()
+
+    @classmethod
+    def all_filepaths(cls, root):
+        for dirpath, dirnames, filenames in os.walk(root):
+            _, dir_extension = os.path.splitext(dirpath)
+            if dir_extension == cls.EXTENSION:
+                yield dirpath

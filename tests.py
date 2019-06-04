@@ -12,7 +12,7 @@ import random
 
 from mystore import DB
 from mystore import DbmFile, JsonFile
-from mystore import OriginalRouter, JsonRouter
+from mystore import OriginalRouter
 from mystore import MyStoreError
 from mystore import CompressedJsonConverter as CJC, Base64CompressedJsonConverter
 from mystore import handlers
@@ -37,6 +37,7 @@ class OriginalRouterTest(unittest.TestCase):
 
         sep = os.path.sep
         ext = ".dbm"
+        self.ext = ext
         self.data = [
             # unit_size, subfolder_size, key, expected_filename(v1), expected filename(v0)
             (1, 0, 0, '0%s'%ext, '-1%s'%(ext)),
@@ -84,7 +85,7 @@ class OriginalRouterTest(unittest.TestCase):
             "subfolder_size": row[1],
             "first_key": 0
         }
-        routers = [OriginalRouter(self.root_dir, params(row)) for row in self.data]
+        routers = [OriginalRouter(self.root_dir, params(row), self.ext) for row in self.data]
         expected_values = [os.path.join(self.root_dir, row[3]) for row in self.data]
         returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
@@ -98,7 +99,7 @@ class OriginalRouterTest(unittest.TestCase):
             "subfolder_size": row[1],
             "first_key": 1
         }
-        routers = [OriginalRouter(self.root_dir, params(row)) for row in self.data]
+        routers = [OriginalRouter(self.root_dir, params(row), self.ext) for row in self.data]
         expected_values = [os.path.join(self.root_dir, row[4]) for row in self.data]
         returned_values = [router.get_path(row[2]) for router, row in zip(routers, self.data)]
         self.assertListEqual(returned_values, expected_values)
@@ -180,10 +181,7 @@ class DBTestsSetup:
             "subfolder_size": 1,
             "first_key": 0
         }
-        self.router = OriginalRouter(self.root_dir, params=self.params)
-        self.db = DB(self.router)
-        self.db.create()
-
+        self.db = DB(self.root_dir, self.params).create()
         with self.db.writer() as writer:
             for k, v in self.data:
                 writer[k] = v
@@ -213,7 +211,7 @@ class DBCreateTest(DBTestsSetup, unittest.TestCase):
         Try creating another db in existing non-empty directory.
         """
         with self.assertRaises(MyStoreError):
-            db = DB(self.router)
+            db = DB(self.root_dir, self.params)
             db.create()
 
 
@@ -314,10 +312,7 @@ class DBConcurrencyTest(unittest.TestCase):
             "subfolder_size": 1,
             "first_key": 0
         }
-        self.router = OriginalRouter(self.root_dir, params=self.params)
-        self.db = DB(self.router)
-        self.db.create()
-
+        self.db = DB(self.root_dir, self.params).create()
         self.threads_number = 5
         self.processes_number = 5
 

@@ -31,20 +31,18 @@ class OriginalRouter(BaseRouter):
 
     Example 1:
     >>> router = OriginalRouter(root_dir="/tmp/", \
-            params={"unit_size": 10, "subfolder_size":2, "first_key":1})
+            params={"unit_size": 10, "subfolder_size":2, "first_key":1}, extension="")
     >>> router.get_path(22)
     '/tmp/1/0.dbm'
 
     Example 2:
     >>> router = OriginalRouter(root_dir="/tmp/", \
-            params={"unit_size": 10, "subfolder_size":0, "first_key":1})
+            params={"unit_size": 10, "subfolder_size":0, "first_key":1}, extension="")
     >>> router.get_path(22)
     '/tmp/2.dbm'
     """
-    EXTENSION = ".dbm"
-
-    def __init__(self, root_dir, params):
-        super().__init__(root_dir, params)
+    def __init__(self, root_dir, params, extension):
+        super().__init__(root_dir, params, extension)
         self.unit_size = params["unit_size"]
         self.subfolder_size = params["subfolder_size"]
         self.first_key = params["first_key"]
@@ -68,23 +66,12 @@ class OriginalRouter(BaseRouter):
             filename = str(file_index - (subfolder_index * self.subfolder_size))
 
         # 3. derive absolute filename
-        filepath = os.path.join(
-            os.path.abspath(self.root_dir),
-            subfolder_name,
-            "%s" % filename + self.EXTENSION
-        )
+        filepath = os.path.join(self.root_dir, subfolder_name, "%s" % filename)
 
         # 4. make it pretty
         filepath = os.path.normpath(filepath)
 
-        return filepath
-
-    def all_filepaths(self):
-        for dirpath, dirnames, filenames in os.walk(self.root_dir):
-            for fn in filenames:
-                filepath = os.path.join(dirpath, fn)
-                if dbm.whichdb(filepath) == "dbm.gnu":
-                    yield filepath
+        return filepath + self.extension
 
 
 if __name__ == "__main__":

@@ -15,8 +15,7 @@ from .converters import (
 from .routers import (
     BaseRouter,
     OriginalRouter,
-    JsonRouter,
-    DirRouter
+    StringFormatRouter
 )
 from .main import DB
 from .errors import MyStoreError

@@ -17,17 +17,19 @@ from .errors import MyStoreError
 
 
 DBMDB_FILENAME = ".dbmdb.json"
-CONFIG_FILENAME = "config"
+CONFIG_FILENAME = "mystore_config"
 
 
 class DB:
     """
     Main class which represents the key:value store.
     """
-    def __init__(self, router, basefile_cls=DbmFile, converter_cls=CJC):
-        self.router = router
-        self.root = self.router.root_dir
+    def __init__(self, root, params, router_cls=OriginalRouter,
+                 basefile_cls=DbmFile, converter_cls=CJC):
+        self.root = root
+        self.params = params
         self.basefile_cls = basefile_cls
+        self.router = router_cls(root, params, basefile_cls.EXTENSION)
         self.converter = converter_cls()
 
     def create(self):
@@ -48,11 +50,10 @@ class DB:
         Get an instance representing an existing store.
         """
         config = cls.load_config(root)
-        router_cls = cls.get_router_classes()[config["router_cls"]]
-        router_params = config["params"]
-        router = router_cls(root, router_params)
         return cls(
-            router,
+            root,
+            config["params"],
+            router_cls=cls.get_router_classes()[config["router_cls"]],
             basefile_cls=cls.get_basefile_classes()[config["basefile_cls"]],
             converter_cls=cls.get_converter_classes()[config["converter_cls"]]
         )

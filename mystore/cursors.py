@@ -91,7 +91,7 @@ class Reader(Cursor):
         Return all values:
         go through all files in DB and return all key:value pairs from each file.
         """
-        for filepath in self.db.router.all_filepaths():
+        for filepath in self.db.basefile_cls.all_filepaths(self.db.root):
             with self.db.basefile_cls(filepath, mode=self.mode) as f:
                 contents = f.items()
                 for k,v in contents:

@@ -13,6 +13,8 @@ from mystore.errors import BaseUnitDoesNotExist
 
 
 class JsonFile(BaseFile):
+    EXTENSION = ".json"
+
     def __getitem__(self, k):
         return self._handle[str(k)]
 

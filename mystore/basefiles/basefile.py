@@ -15,6 +15,11 @@ class BaseFile(metaclass=abc.ABCMeta):
     """
     Abstract Base Class which represents the API of a basic storage unit.
     """
+    @property
+    @abc.abstractproperty
+    def EXTENSION(self):
+        pass
+
     def __init__(self, path, mode, *, wait_time=0.1):
         """
         Create instance and open file at 'path' in specified mode.
@@ -86,3 +91,17 @@ class BaseFile(metaclass=abc.ABCMeta):
     _open_for_read = _open_for_read_loop = \
     _open_for_write = _open_for_write_loop = \
     _raise_unsupported
+
+    @classmethod
+    def all_filepaths(cls, root):
+        """
+        Generator.
+        Get all files of this class in the 'root' directory.
+        This is default implementation, which only looks at file extension.
+        """
+        for dirpath, dirnames, filenames in os.walk(root):
+            for fn in filenames:
+                filepath = os.path.join(dirpath, fn)
+                _, file_extension = os.path.splitext(filepath)
+                if file_extension == cls.EXTENSION:
+                    yield filepath

@@ -5,6 +5,7 @@ gdbm as basic storage unit.
 import logging
 lg = logging.getLogger(__name__)
 
+import os
 import dbm.gnu
 import dbm
 import time
@@ -14,6 +15,8 @@ from mystore.errors import BaseUnitDoesNotExist
 
 
 class DbmFile(BaseFile):
+    EXTENSION = ".dbm"
+
     def __getitem__(self, k):
         return self._handle[str(k)]
 
@@ -96,3 +99,11 @@ class DbmFile(BaseFile):
             else:
                 break
         return handle
+
+    @classmethod
+    def all_filepaths(cls, root):
+        for dirpath, dirnames, filenames in os.walk(root):
+            for fn in filenames:
+                filepath = os.path.join(dirpath, fn)
+                if dbm.whichdb(filepath) == "dbm.gnu":
+                    yield filepath

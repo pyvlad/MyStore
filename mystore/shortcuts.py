@@ -11,10 +11,10 @@ from .routers import (
     OriginalRouter,
     StringFormatRouter
 )
-from .basefiles import (
-    DbmFile,
-    JsonFile,
-    DirFile
+from .units import (
+    DbmFileUnit,
+    JsonFileUnit,
+    DirUnit
 )
 from .converters import (
     CompressedJsonConverter,
@@ -38,7 +38,7 @@ def create_dbmdb(root, dbm_size, subfolder_size, first_key=1):
             "first_key": first_key
         },
         router_cls=OriginalRouter,
-        basefile_cls=DbmFile,
+        unit_cls=DbmFileUnit,
         converter_cls=CompressedJsonConverter
     ).create()
 
@@ -46,7 +46,8 @@ def create_dbmdb(root, dbm_size, subfolder_size, first_key=1):
 def dbmdb_to_jsondb(old_path, new_path):
     """ Reformat existing dbmdb to db with JSON files instead of gdbm files. """
     old_db = get_db(old_path)
-    new_db = DB(new_path, old_db.params, OriginalRouter, JsonFile, Base64CompressedJsonConverter)
+    new_db = DB(new_path, old_db.params,
+        OriginalRouter, JsonFileUnit, Base64CompressedJsonConverter)
     new_db.create()
     # monkey patch converters to avoid unneccessary conversions:
     old_db.converter._load_handlers = []
@@ -58,7 +59,8 @@ def dbmdb_to_jsondb(old_path, new_path):
 def jsondb_to_dbmdb(old_path, new_path):
     """ Reformat existing db with JSON files into a dbmdb with gdbm files. """
     old_db = get_db(old_path)
-    new_db = DB(new_path, old_db.router.params, OriginalRouter, DbmFile, CompressedJsonConverter)
+    new_db = DB(new_path, old_db.router.params,
+        OriginalRouter, DbmFileUnit, CompressedJsonConverter)
     new_db.create()
     # monkey patch converters to avoid unneccessary conversions:
     old_db.converter._load_handlers = [handlers.bytes_from_base64_string] # read bytes
@@ -70,7 +72,8 @@ def jsondb_to_dbmdb(old_path, new_path):
 def dbmdb_to_filedb(old_path, new_path, new_router_params):
     """ Reformat existing dbmdb to db with plain files instead of gdbm files. """
     old_db = get_db(old_path)
-    new_db = DB(new_path, new_router_params, StringFormatRouter, DirFile, CompressedJsonConverter)
+    new_db = DB(new_path, new_router_params,
+        StringFormatRouter, DirUnit, CompressedJsonConverter)
     new_db.create()
     # monkey patch converters to avoid unneccessary conversions:
     old_db.converter._load_handlers = []
@@ -82,7 +85,8 @@ def dbmdb_to_filedb(old_path, new_path, new_router_params):
 def filedb_to_dbmdb(old_path, new_path, new_router_params):
     """ Reformat existing filedb to dbmdb with plain files instead of gdbm files. """
     old_db = get_db(old_path)
-    new_db = DB(new_path, new_router_params, OriginalRouter, DbmFile, CompressedJsonConverter)
+    new_db = DB(new_path, new_router_params,
+        OriginalRouter, DbmFileUnit, CompressedJsonConverter)
     new_db.create()
     # monkey patch converters to avoid unneccessary conversions:
     old_db.converter._load_handlers = [] # read bytes

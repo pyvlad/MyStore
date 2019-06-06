@@ -1,5 +1,5 @@
 """
-This module contains DbmFile, BaseFile implementation with
+This module contains DbmFileUnit, BaseUnit implementation with
 gdbm as basic storage unit.
 """
 import logging
@@ -10,11 +10,11 @@ import dbm.gnu
 import dbm
 import time
 
-from .basefile import BaseFile
+from .base import BaseUnit
 from mystore.errors import BaseUnitDoesNotExist
 
 
-class DbmFile(BaseFile):
+class DbmFileUnit(BaseUnit):
     EXTENSION = ".dbm"
 
     def __getitem__(self, k):
@@ -24,7 +24,7 @@ class DbmFile(BaseFile):
         self._handle[str(k)] = v
 
     def close(self):
-        lg.debug("closing old file handle")
+        lg.debug("closing old dbm handle")
         self._handle.close()
 
     def keys(self):
@@ -101,7 +101,7 @@ class DbmFile(BaseFile):
         return handle
 
     @classmethod
-    def all_filepaths(cls, root):
+    def get_all_unit_paths(cls, root):
         for dirpath, dirnames, filenames in os.walk(root):
             for fn in filenames:
                 filepath = os.path.join(dirpath, fn)

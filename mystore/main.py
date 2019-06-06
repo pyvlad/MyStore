@@ -9,7 +9,7 @@ import os
 import sys
 import json
 
-from .basefiles import BaseFile, DbmFile
+from .units import BaseUnit, DbmFileUnit
 from .routers import BaseRouter, OriginalRouter
 from .converters import BaseConverter, CompressedJsonConverter as CJC
 from .cursors import Reader, Writer
@@ -25,11 +25,11 @@ class DB:
     Main class which represents the key:value store.
     """
     def __init__(self, root, params, router_cls=OriginalRouter,
-                 basefile_cls=DbmFile, converter_cls=CJC):
+                 unit_cls=DbmFileUnit, converter_cls=CJC):
         self.root = root
         self.params = params
-        self.basefile_cls = basefile_cls
-        self.router = router_cls(root, params, basefile_cls.EXTENSION)
+        self.unit_cls = unit_cls
+        self.router = router_cls(root, params, unit_cls.EXTENSION)
         self.converter = converter_cls()
 
     def create(self):
@@ -54,14 +54,11 @@ class DB:
             root,
             config["params"],
             router_cls=cls.get_router_classes()[config["router_cls"]],
-            basefile_cls=cls.get_basefile_classes()[config["basefile_cls"]],
+            unit_cls=cls.get_unit_classes()[config["unit_cls"]],
             converter_cls=cls.get_converter_classes()[config["converter_cls"]]
         )
 
     def reader(self, mode="R", threadlock=None):
-        """
-        Context manager which keeps reference
-        """
         return Reader(self, mode, threadlock)
 
     def writer(self, mode="W", threadlock=None):
@@ -69,7 +66,7 @@ class DB:
 
     def dump_config(self):
         config = {
-            "basefile_cls": self.basefile_cls.__name__,
+            "unit_cls": self.unit_cls.__name__,
             "converter_cls": self.converter.__class__.__name__,
             "router_cls": self.router.__class__.__name__,
             "params": self.router.params
@@ -95,7 +92,7 @@ class DB:
                 params_str = f.read()
             params = json.loads(params_str)
             return {
-                "basefile_cls": DbmFile.__name__,
+                "unit_cls": DbmFileUnit.__name__,
                 "converter_cls": CJC.__name__,
                 "router_cls": OriginalRouter.__name__,
                 "params": {
@@ -116,8 +113,8 @@ class DB:
     # TODO: Keys are always integer?
 
     @staticmethod
-    def get_basefile_classes():
-        return {cls.__name__: cls for cls in BaseFile.__subclasses__()}
+    def get_unit_classes():
+        return {cls.__name__: cls for cls in BaseUnit.__subclasses__()}
 
     @staticmethod
     def get_router_classes():

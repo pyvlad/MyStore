@@ -1,5 +1,5 @@
 """
-This module contains BaseFile, an abstract base class
+This module contains BaseUnit, an abstract base class
 which represents basic storage unit.
 """
 import logging
@@ -11,7 +11,7 @@ import abc
 from mystore.errors import MyStoreError
 
 
-class BaseFile(metaclass=abc.ABCMeta):
+class BaseUnit(metaclass=abc.ABCMeta):
     """
     Abstract Base Class which represents the API of a basic storage unit.
     """
@@ -22,7 +22,7 @@ class BaseFile(metaclass=abc.ABCMeta):
 
     def __init__(self, path, mode, *, wait_time=0.1):
         """
-        Create instance and open file at 'path' in specified mode.
+        Create instance and open unit at 'path' in specified mode.
         Mode can be "w", "r", "W", "R".
         """
         self.path = path
@@ -52,27 +52,27 @@ class BaseFile(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __getitem__(self, k):
-        """ Return value stored in file for specified key. """
+        """ Return value stored in unit for specified key. """
 
     @abc.abstractmethod
     def __setitem__(self, k, v):
-        """ Set value to be stored in file for specified key. """
+        """ Set value to be stored in unit for specified key. """
 
     @abc.abstractmethod
     def keys(self):
-        """ Load and return list of all keys contained in the file. """
+        """ Load and return list of all keys contained in the unit. """
 
     @abc.abstractmethod
     def items(self):
-        """ Load and return list of all k:v pairs (as tuples) contained in the file. """
+        """ Load and return list of all k:v pairs (as tuples) contained in the unit. """
 
     @abc.abstractmethod
     def close(self):
-        """ Close file and finish all pending operations. """
+        """ Close unit and finish all pending operations. """
 
     def _open(self):
-        """ Open file for operations and return handle - accessor to file content. """
-        lg.debug("opening new file handle")
+        """ Open unit for operations and return handle - accessor to unit content. """
+        lg.debug("opening new unit handle")
         if self.mode == "r":
             return self._open_for_read()
         elif self.mode == "R":
@@ -93,10 +93,10 @@ class BaseFile(metaclass=abc.ABCMeta):
     _raise_unsupported
 
     @classmethod
-    def all_filepaths(cls, root):
+    def get_all_unit_paths(cls, root):
         """
         Generator.
-        Get all files of this class in the 'root' directory.
+        Get all paths to units of this class in the 'root' directory.
         This is default implementation, which only looks at file extension.
         """
         for dirpath, dirnames, filenames in os.walk(root):

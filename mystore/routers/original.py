@@ -1,6 +1,10 @@
 """
-This module contains OriginalRouter,
-router class mapping integers to dbm files.
+This module contains OriginalRouter.
+This router class maps integers to base units
+according to:
+    - base unit size,
+    - size of subfolders with base units,
+    - and first key (0 or 1).
 """
 import logging
 lg = logging.getLogger(__name__)
@@ -14,7 +18,7 @@ from .base import BaseRouter
 
 class OriginalRouter(BaseRouter):
     """
-    BaseRouter subclass mapping integer keys to dbm file paths.
+    BaseRouter subclass mapping integer keys to base unit paths.
 
     Arguments
     ---------
@@ -48,9 +52,6 @@ class OriginalRouter(BaseRouter):
         self.first_key = params["first_key"]
 
     def get_path(self, key):
-        """
-        Returns dbm path derived from integer key.
-        """
         # 1. derive index of dbm file from key value
         file_index = (key - self.first_key) // self.unit_size
 

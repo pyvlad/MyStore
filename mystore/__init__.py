@@ -1,11 +1,11 @@
 """
 Simple key:value store, where data is stored in a tree of files.
 """
-from .basefiles import (
-    BaseFile,
-    DbmFile,
-    JsonFile,
-    DirFile
+from .units import (
+    BaseUnit,
+    DbmFileUnit,
+    JsonFileUnit,
+    DirUnit
 )
 from .converters import (
     CompressedJsonConverter,

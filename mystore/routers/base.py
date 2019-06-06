@@ -1,6 +1,6 @@
 """
 This module contains BaseRouter, abstract base class
-responsible for mapping keys to files storing data in DB directory.
+responsible for mapping keys to base units storing data in DB directory.
 """
 import logging
 lg = logging.getLogger(__name__)
@@ -17,11 +17,11 @@ class BaseRouter(metaclass=abc.ABCMeta):
     Arguments
     ---------
     root_dir: str
-        Base directory where tree of dbm files is stored.
+        Base directory where tree of base units is stored.
     params: dict
         Dictoinary with other parameters used by the 'get_path' method.
     extension: str
-        File extension, e.g. ".dbm".
+        Base unit extension, e.g. ".dbm".
     """
     def __init__(self, root_dir, params, extension):
         self.root_dir = os.path.abspath(os.path.expanduser(root_dir))
@@ -30,4 +30,4 @@ class BaseRouter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_path(self, key):
-        """ Return path to base file with data. """
+        """ Return path to base unit with data. """

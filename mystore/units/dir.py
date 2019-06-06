@@ -1,5 +1,5 @@
 """
-This module contains FolderFile, BaseFile implementation with
+This module contains DirUnit, BaseUnit implementation with
 folder of plain files as basic storage unit.
 """
 import logging
@@ -7,11 +7,11 @@ lg = logging.getLogger(__name__)
 
 import os
 
-from .basefile import BaseFile
+from .base import BaseUnit
 from mystore.errors import BaseUnitDoesNotExist
 
 
-class DirFile(BaseFile):
+class DirUnit(BaseUnit):
     EXTENSION = ".dir"
 
     @property
@@ -56,7 +56,7 @@ class DirFile(BaseFile):
             self._create_directory()
 
     @classmethod
-    def all_filepaths(cls, root):
+    def get_all_unit_paths(cls, root):
         for dirpath, dirnames, filenames in os.walk(root):
             _, dir_extension = os.path.splitext(dirpath)
             if dir_extension == cls.EXTENSION:

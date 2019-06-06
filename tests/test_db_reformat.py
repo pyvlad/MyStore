@@ -80,9 +80,9 @@ class DBReformatTest(unittest.TestCase):
         self.assertListEqual(retrieved, expected)
 
     def test_reformat_as_leveldb(self):
-        from mystore.basefiles import LeveldbFile
+        from mystore.units import LeveldbUnit
 
-        new_db = DB(self.root2, self.params, OriginalRouter, LeveldbFile, CompressedJsonConverter)
+        new_db = DB(self.root2, self.params, OriginalRouter, LeveldbUnit, CompressedJsonConverter)
         new_db.create()
         # monkey patch converters to avoid unneccessary conversions:
         self.db.converter._load_handlers = []

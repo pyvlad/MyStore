@@ -20,7 +20,7 @@ class Cursor:
         self.db = db
         self.mode = mode
         self.threadlock = DummyThreadLock() if not threadlock else threadlock
-        self._file = None   # currently opened file
+        self._unit = None   # currently opened file
 
     def __enter__(self):
         return self
@@ -29,15 +29,15 @@ class Cursor:
         self.close()
 
     def close(self):
-        self._close_opened_file()
-        delattr(self, "_file")
+        self._close_opened_unit()
+        delattr(self, "_unit")
 
     # ******* implementation details *******
-    def _close_opened_file(self):
-        if self._file is not None:
+    def _close_opened_unit(self):
+        if self._unit is not None:
             lg.debug("closing old file handle")
-            self._file.close()
-            self._file = None
+            self._unit.close()
+            self._unit = None
 
 
 class Writer(Cursor):
@@ -47,12 +47,12 @@ class Writer(Cursor):
     def __setitem__(self, k, v):
         filepath = self.db.router.get_path(k)
         with self.threadlock:
-            if self._file and (self._file.path == filepath):
+            if self._unit and (self._unit.path == filepath):
                 lg.debug("file already open, skipping")
             else:
-                self._close_opened_file()
-                self._file = self.db.basefile_cls(filepath, mode=self.mode)
-            self._file[k] = self.db.converter.dump(v)
+                self._close_opened_unit()
+                self._unit = self.db.unit_cls(filepath, mode=self.mode)
+            self._unit[k] = self.db.converter.dump(v)
 
 
 class Reader(Cursor):
@@ -60,14 +60,14 @@ class Reader(Cursor):
         super().__init__(db, mode, threadlock)
 
     def __getitem__(self, k):
-        filepath = self.db.router.get_path(k)
+        unit_path = self.db.router.get_path(k)
         with self.threadlock:
-            if self._file and (self._file.path == filepath):
+            if self._unit and (self._unit.path == unit_path):
                 lg.debug("file already open, skipping")
             else:
-                self._close_opened_file()
-                self._file = self.db.basefile_cls(filepath, mode=self.mode)
-            v = self._file[k]
+                self._close_opened_unit()
+                self._unit = self.db.unit_cls(unit_path, mode=self.mode)
+            v = self._unit[k]
         return self.db.converter.load(v)
 
     def get(self, k, default=None):
@@ -91,9 +91,9 @@ class Reader(Cursor):
         Return all values:
         go through all files in DB and return all key:value pairs from each file.
         """
-        for filepath in self.db.basefile_cls.all_filepaths(self.db.root):
-            with self.db.basefile_cls(filepath, mode=self.mode) as f:
+        for unit_path in self.db.unit_cls.get_all_unit_paths(self.db.root):
+            with self.db.unit_cls(unit_path, mode=self.mode) as f:
                 contents = f.items()
                 for k,v in contents:
                     yield (k, self.db.converter.load(v))
-            lg.debug("filepath read: %s" % filepath)
+            lg.debug("unit path read: %s" % unit_path)

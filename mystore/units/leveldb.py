@@ -1,5 +1,5 @@
 """
-This module contains LeveldbFile, BaseFile implementation with
+This module contains LeveldbUnit, BaseUnit implementation with
 LevelDB as basic storage unit.
 
 Installation:
@@ -23,11 +23,11 @@ import os
 
 import plyvel
 
-from .basefile import BaseFile
+from .base import BaseUnit
 from mystore.errors import BaseUnitDoesNotExist
 
 
-class LeveldbFile(BaseFile):
+class LeveldbUnit(BaseUnit):
     EXTENSION = ".lvl"
 
     def __getitem__(self, k):
@@ -69,7 +69,7 @@ class LeveldbFile(BaseFile):
         return handle
 
     @classmethod
-    def all_filepaths(cls, root):
+    def get_all_unit_paths(cls, root):
         for dirpath, dirnames, filenames in os.walk(root):
             _, dir_extension = os.path.splitext(dirpath)
             if dir_extension == cls.EXTENSION:

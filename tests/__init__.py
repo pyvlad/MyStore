@@ -16,7 +16,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 
 from .test_routers import OriginalRouterTest
-from .test_basefiles import DbmFileTest
+from .test_units import DbmFileUnitTest
 from .test_db_create import DBCreateTest
 from .test_db_io import DBReaderTest
 from .test_concurrency import DBConcurrencyTest

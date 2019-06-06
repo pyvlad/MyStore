@@ -3,15 +3,15 @@ import os
 import tempfile
 
 from mystore import (
-    DbmFile,
+    DbmFileUnit,
     CompressedJsonConverter,
     MyStoreError
 )
 
 
-class DbmFileTest(unittest.TestCase):
+class DbmFileUnitTest(unittest.TestCase):
     """
-    Test DbmFile base unit.
+    Test DbmFileUnit class.
     """
     @classmethod
     def setUpClass(cls):
@@ -24,7 +24,7 @@ class DbmFileTest(unittest.TestCase):
             100: None,
         }
         cls.converter = CompressedJsonConverter()
-        with DbmFile(filepath, "w") as f:
+        with DbmFileUnit(filepath, "w") as f:
             for k, v in testdata.items():
                 f[k] = cls.converter.dump(v)
         cls._filepath = filepath
@@ -37,7 +37,7 @@ class DbmFileTest(unittest.TestCase):
 
     # setup and teardown for each test
     def setUp(self):
-        self.dbmfile = DbmFile(self._filepath, mode="r")
+        self.dbmfile = DbmFileUnit(self._filepath, mode="r")
 
     def tearDown(self):
         self.dbmfile.close()
@@ -73,4 +73,4 @@ class DbmFileTest(unittest.TestCase):
 
     def test_unsupported_mode(self):
         with self.assertRaises(MyStoreError):
-            dbmfile = DbmFile(self._filepath, mode="yo")
+            dbmfile = DbmFileUnit(self._filepath, mode="yo")

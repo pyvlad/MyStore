@@ -1,6 +1,6 @@
 """
-This module contains DbmFile, BaseFile implementation with
-json as basic storage unit.
+This module contains JsonFileUnit, BaseUnit implementation with
+JSON as basic storage unit.
 """
 import logging
 lg = logging.getLogger(__name__)
@@ -8,11 +8,11 @@ lg = logging.getLogger(__name__)
 import os
 import json
 
-from .basefile import BaseFile
+from .base import BaseUnit
 from mystore.errors import BaseUnitDoesNotExist
 
 
-class JsonFile(BaseFile):
+class JsonFileUnit(BaseUnit):
     EXTENSION = ".json"
 
     def __getitem__(self, k):

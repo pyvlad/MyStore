@@ -1,6 +1,7 @@
 """
-This module contains StringFormatRouter,
-router class mapping integers to directories of files.
+This module contains StringFormatRouter.
+This router class maps integer keys to paths based
+on substrings of string version of integer keys.
 """
 import logging
 lg = logging.getLogger(__name__)
@@ -12,7 +13,8 @@ from .base import BaseRouter
 
 class StringFormatRouter(BaseRouter):
     """
-    BaseRouter subclass mapping integer keys to directory file paths.
+    BaseRouter subclass mapping integer keys to paths based on substrings
+    of string version of integer keys.
 
     Arguments
     ---------
@@ -58,9 +60,6 @@ class StringFormatRouter(BaseRouter):
         self.str_key_template = "%0{}d".format(self.digits) # e.g."%07d"
 
     def get_path(self, key):
-        """
-        Returns dir path derived from integer key.
-        """
         str_key = self.str_key_template % key
         if self.idxs:
             subfolders = [str_key[:self.idxs[0]]]           # e.g. "0123456"[:-5], or "01"

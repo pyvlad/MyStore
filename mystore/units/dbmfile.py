@@ -99,11 +99,3 @@ class DbmFileUnit(BaseUnit):
             else:
                 break
         return handle
-
-    @classmethod
-    def get_all_unit_paths(cls, root):
-        for dirpath, dirnames, filenames in os.walk(root):
-            for fn in filenames:
-                filepath = os.path.join(dirpath, fn)
-                if dbm.whichdb(filepath) == "dbm.gnu":
-                    yield filepath

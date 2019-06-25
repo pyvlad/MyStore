@@ -8,6 +8,7 @@ This subpackage contains converter classes and handler functiions:
 from .base import BaseConverter
 from . import handlers
 from .classes import (
+    FakeConverter,
     CompressedJsonConverter,
     Base64CompressedJsonConverter
 )

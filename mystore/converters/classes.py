@@ -8,6 +8,12 @@ from .base import BaseConverter
 from . import handlers
 
 
+class FakeConverter(BaseConverter):
+    """ No conversion done, values are raw bytes. """
+    DUMP_HANDLERS = []
+    LOAD_HANDLERS = []
+
+
 class CompressedJsonConverter(BaseConverter):
     """ Convert Python objects to/from compressed JSON objects. """
     DUMP_HANDLERS = [handlers.object_to_compressed_json_binary]

@@ -11,3 +11,4 @@ setup(
     description=("""My customizable key:value store."""),
     install_requires=[]
 )
+# optional dependencies: plyvel, sqlalchemy 

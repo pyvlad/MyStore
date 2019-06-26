@@ -8,6 +8,7 @@ from .units import (
     DirUnit
 )
 from .converters import (
+    FakeConverter,
     CompressedJsonConverter,
     Base64CompressedJsonConverter,
     handlers

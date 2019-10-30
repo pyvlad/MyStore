@@ -181,6 +181,19 @@ class Storage:
 
         return values
 
+    def yield_many(self, keys, default=None, chunk_size = 1000):
+        """
+        Generator to avoid reading all webpages at once.
+        Returns tuples (key, value).
+        """
+        while True:
+            chunk_of_keys, keys = keys[:chunk_size], keys[chunk_size:]
+            if not chunk_of_keys:
+                return
+            values = self.get_many(chunk_of_keys)
+            for key, value in zip(chunk_of_keys, values):
+                yield (key, value)
+
     def get_missing_keys(self, keys):
         """
         Get list of keys that are not in storage for given list of keys.

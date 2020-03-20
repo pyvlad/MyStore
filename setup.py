@@ -9,6 +9,9 @@ setup(
     packages=find_packages(),
     scripts=[],
     description=("""My customizable key:value store."""),
-    install_requires=[]
+    install_requires=[],
+    extras_require={
+        "storage": ["sqlalchemy"],
+        "leveldb": ["plyvel"]
+    }
 )
-# optional dependencies: plyvel, sqlalchemy 

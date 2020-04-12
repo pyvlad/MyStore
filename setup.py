@@ -34,3 +34,4 @@ setup(
         'clean': CleanCommand,
     }
 )
+# optional dependencies: plyvel, sqlalchemy 

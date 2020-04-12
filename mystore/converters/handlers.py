@@ -21,7 +21,7 @@ def object_from_compressed_json_binary(v):
     try:
         v = json.loads(gzip.decompress(v).decode())
     except UnicodeDecodeError:
-        lg.warning("UnicodeDecodeError while decoding value for key=%s", k)
+        lg.warning("UnicodeDecodeError while decoding value")
         v = json.loads(gzip.decompress(v).decode(errors="replace"))
     return v
 
